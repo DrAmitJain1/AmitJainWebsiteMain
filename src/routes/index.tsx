@@ -318,6 +318,18 @@ function DoctorIntro() {
             ))}
           </ul>
           
+          {/* Published Research Highlight */}
+          <Link to="/about" className="group mt-6 flex items-center gap-3.5 rounded-2xl border bg-gradient-to-r from-white/80 to-accent/30 p-4 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 border-glow-hover">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-extrabold text-foreground group-hover:text-primary transition-colors">Published Researcher — Peer-Reviewed Journals</div>
+              <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">BMJ Case Reports · Cureus · Mycoses (Wiley) · LWW & more</div>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary shrink-0 transition-colors" />
+          </Link>
+          
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild className="rounded-full shadow-sm hover:shadow">
               <Link to="/about">Read full bio profile <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
