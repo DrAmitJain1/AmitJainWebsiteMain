@@ -136,7 +136,7 @@ export async function getGallery() {
     const querySnap = await getDocs(collection(db, "gallery"));
     if (!querySnap.empty) {
       const items: any[] = [];
-      querySnap.forEach((d) => items.push(d.data()));
+      querySnap.forEach((d) => items.push({ id: d.id, ...d.data() }));
       return items as typeof fallbackGallery;
     }
     return fallbackGallery;

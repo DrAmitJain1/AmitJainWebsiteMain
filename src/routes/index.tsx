@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import {
   ArrowRight, Award, CalendarCheck, CheckCircle2, MessageCircle, ShieldCheck, Sparkles, Star, Heart, Check, HelpCircle,
   X, PhoneCall, Loader2, User
@@ -462,27 +463,60 @@ function BeforeAfter() {
 
 function ServicesOverview() {
   const [services, setServices] = useState(fallbackServices);
+  const [activeTab, setActiveTab] = useState("All");
 
   useEffect(() => {
     getServices().then(setServices);
   }, []);
 
+  const getCategory = (slug: string) => {
+    if (["prp-therapy", "hair-fall-treatment"].includes(slug)) return "Trichology";
+    if (["anti-aging-treatment", "cosmetology-procedures"].includes(slug)) return "Cosmetology";
+    if (["nail-disorders", "skin-allergy-treatment"].includes(slug)) return "Medical Care";
+    return "Dermatology";
+  };
+
+  const filtered = useMemo(() => {
+    if (activeTab === "All") return services.slice(0, 6);
+    return services.filter((s: any) => getCategory(s.slug) === activeTab).slice(0, 6);
+  }, [services, activeTab]);
+
   return (
-    <section className="relative isolate overflow-hidden py-14 md:py-16">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-brand-frost/30 to-brand-mint/20 bg-dot-pattern opacity-50" />
+    <section className="relative isolate overflow-hidden py-14 md:py-16 bg-white/40">
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-brand-frost/20 to-brand-mint/10 bg-dot-pattern opacity-40" />
       <div className="mx-auto max-w-7xl px-4">
         <SectionHeading
           eyebrow="Our clinical services"
           title={<>Evidence-based <span className="text-cursive font-normal text-4xl md:text-[2.75rem]">dermatology</span> treatments</>}
           description="Gentle protocols matched with state-of-the-art diagnostic technology for maximum patient comfort."
         />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {services.slice(0, 6).map((s) => (
+
+        {/* Simple interactive filters for the homepage block */}
+        <div className="flex flex-wrap gap-2 justify-center mb-10 max-w-2xl mx-auto">
+          {["All", "Dermatology", "Cosmetology", "Trichology", "Medical Care"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 border",
+                activeTab === tab
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm scale-102"
+                  : "bg-white/70 text-muted-foreground border-primary/5 hover:bg-secondary/40 hover:text-primary hover:border-primary/10"
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 transition-all duration-500 animate-fade-down">
+          {filtered.map((s: any) => (
             <ServiceCard key={s.slug} service={s} />
           ))}
         </div>
-        <div className="mt-10 text-center">
-          <Button asChild variant="outline" className="rounded-full shadow-sm hover:shadow">
+        
+        <div className="mt-12 text-center">
+          <Button asChild variant="outline" className="rounded-full shadow-sm hover:shadow-md px-6 py-5 text-xs font-extrabold border-primary/25 hover:border-primary hover:bg-secondary/10">
             <Link to="/services">View all services catalog <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
           </Button>
         </div>

@@ -9,6 +9,7 @@ export type Service = {
   process: { step: string; detail: string }[];
   benefits: string[];
   faqs: { q: string; a: string }[];
+  imageUrl?: string;
 };
 
 export const services: Service[] = [
@@ -349,10 +350,21 @@ export const testimonials: Testimonial[] = [
 ];
 
 export const galleryImages = [
-  { src: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1000&q=70", category: "Clinic", caption: "Reception" },
+  // Doctor Images
+  { src: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=1000&q=70", category: "Doctor", caption: "Dr. Amit Jain — Consultation" },
+  { src: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=1000&q=70", category: "Doctor", caption: "Dr. Amit Jain — In Clinic" },
+  { src: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=1000&q=70", category: "Doctor", caption: "Dr. Amit Jain — Dermatology Expert" },
+  // Clinic Images
+  { src: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1000&q=70", category: "Clinic", caption: "Reception Area" },
   { src: "https://images.unsplash.com/photo-1631815587646-b85a1bb027e1?w=1000&q=70", category: "Clinic", caption: "Consultation Room" },
+  { src: "https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?w=1000&q=70", category: "Clinic", caption: "Lobby & Waiting Area" },
+  { src: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1000&q=70", category: "Clinic", caption: "Clinic Exterior" },
+  { src: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=1000&q=70", category: "Clinic", caption: "Modern Interiors" },
+  // Treatment Images
   { src: "https://images.unsplash.com/photo-1606811971618-4486d14f3f99?w=1000&q=70", category: "Treatments", caption: "Procedure Suite" },
   { src: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1000&q=70", category: "Treatments", caption: "Hydrafacial" },
+  { src: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1000&q=70", category: "Treatments", caption: "Laser Suite" },
+  // Before & After
   {
     beforeSrc: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=900&q=70",
     afterSrc: "https://images.unsplash.com/photo-1556228852-80b6e5eeff06?w=900&q=70",
@@ -365,8 +377,6 @@ export const galleryImages = [
     category: "Before & After",
     caption: "Pigmentation & Tone Laser"
   },
-  { src: "https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?w=1000&q=70", category: "Clinic", caption: "Lobby" },
-  { src: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1000&q=70", category: "Treatments", caption: "Laser Suite" },
   {
     beforeSrc: "https://images.unsplash.com/photo-1559599101-f09722fb4948?w=900&q=70",
     afterSrc: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=900&q=70",

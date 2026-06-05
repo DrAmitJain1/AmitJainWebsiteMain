@@ -210,7 +210,8 @@ function AdminSection() {
     causesStr: "",
     benefitsStr: "",
     process: [] as { step: string; detail: string }[],
-    faqs: [] as { q: string; a: string }[]
+    faqs: [] as { q: string; a: string }[],
+    imageUrl: ""
   });
   const [newStep, setNewStep] = useState({ step: "", detail: "" });
   const [newFaqItem, setNewFaqItem] = useState({ q: "", a: "" });
@@ -227,8 +228,11 @@ function AdminSection() {
   });
 
   const [newTestimonial, setNewTestimonial] = useState({ name: "", rating: 5, concern: "Acne", text: "", date: "Today" });
-  const [newGallery, setNewGallery] = useState({ src: "", beforeSrc: "", afterSrc: "", category: "Clinic", caption: "" });
+  const [newGallery, setNewGallery] = useState({ src: "", beforeSrc: "", afterSrc: "", category: "Clinic", caption: "", serviceSlug: "" });
   const [galleryAssetType, setGalleryAssetType] = useState<"standard" | "beforeAfter">("standard");
+  const [galleryCatFilter, setGalleryCatFilter] = useState("All");
+  const [adminGallerySearch, setAdminGallerySearch] = useState("");
+  const [galleryServicesList, setGalleryServicesList] = useState<any[]>([]);
   const [newFaq, setNewFaq] = useState({ q: "", a: "", category: "General" });
 
   // 3. SEO Settings State
@@ -317,6 +321,17 @@ function AdminSection() {
           const list: any[] = [];
           snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
           setData(list.length > 0 ? list : fallbackGallery);
+
+          // Also fetch services list for gallery item linking
+          try {
+            const servSnap = await getDocs(collection(db, "services"));
+            const servList: any[] = [];
+            servSnap.forEach((d) => servList.push({ id: d.id, ...d.data() }));
+            setGalleryServicesList(servList.length > 0 ? servList : fallbackServices);
+          } catch (err) {
+            console.error("Failed to load services in admin gallery section:", err);
+            setGalleryServicesList(fallbackServices);
+          }
         } else if (section === "seo") {
           const docSnap = await getDoc(doc(db, "seo", "home"));
           let seoData = {
@@ -386,7 +401,8 @@ function AdminSection() {
         causes: newService.causesStr.split(",").map(x => x.trim()).filter(Boolean),
         benefits: newService.benefitsStr.split(",").map(x => x.trim()).filter(Boolean),
         process: newService.process.length > 0 ? newService.process : [{ step: "Dermal Evaluation", detail: "Assess current markers." }],
-        faqs: newService.faqs.length > 0 ? newService.faqs : [{ q: "Is this safe?", a: "Yes, it is dermatologically tested." }]
+        faqs: newService.faqs.length > 0 ? newService.faqs : [{ q: "Is this safe?", a: "Yes, it is dermatologically tested." }],
+        imageUrl: newService.imageUrl || ""
       };
       await setDoc(doc(db, "services", newService.slug), payload);
       toast.success("New treatment catalog details added!");
@@ -401,7 +417,8 @@ function AdminSection() {
         causesStr: "",
         benefitsStr: "",
         process: [],
-        faqs: []
+        faqs: [],
+        imageUrl: ""
       });
     } catch (err: any) {
       toast.error(err.message);
@@ -475,13 +492,13 @@ function AdminSection() {
     setSaving(true);
     try {
       const payload = galleryAssetType === "standard"
-        ? { src: newGallery.src, category: newGallery.category, caption: newGallery.caption }
-        : { beforeSrc: newGallery.beforeSrc, afterSrc: newGallery.afterSrc, category: "Before & After", caption: newGallery.caption };
+        ? { src: newGallery.src, category: newGallery.category, caption: newGallery.caption, serviceSlug: newGallery.serviceSlug || "" }
+        : { beforeSrc: newGallery.beforeSrc, afterSrc: newGallery.afterSrc, category: "Before & After", caption: newGallery.caption, serviceSlug: newGallery.serviceSlug || "" };
          
       const docRef = await addDoc(collection(db, "gallery"), payload);
       toast.success("New gallery asset successfully added!");
       setData((prev) => [...prev, { id: docRef.id, ...payload }]);
-      setNewGallery({ src: "", beforeSrc: "", afterSrc: "", category: "Clinic", caption: "" });
+      setNewGallery({ src: "", beforeSrc: "", afterSrc: "", category: "Clinic", caption: "", serviceSlug: "" });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -734,6 +751,14 @@ function AdminSection() {
                   <option value="Layers">Layers</option>
                   <option value="Star">Star</option>
                 </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Reference Image (Optional)</label>
+                <ImageSelector
+                  label="Pick Service Image"
+                  value={newService.imageUrl || ""}
+                  onChange={(url) => setNewService({ ...newService, imageUrl: url })}
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Short Excerpt Summary</label>
@@ -1188,10 +1213,11 @@ function AdminSection() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Gallery Room Category</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Gallery Section Category</label>
                     <select value={newGallery.category} onChange={(e) => setNewGallery({ ...newGallery, category: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20">
-                      <option value="Clinic">Clinic Room</option>
-                      <option value="Treatments">Treatment Room</option>
+                      <option value="Doctor">Doctor Images</option>
+                      <option value="Clinic">Clinic Images</option>
+                      <option value="Treatment">Treatment Room</option>
                     </select>
                   </div>
                 </>
@@ -1209,9 +1235,24 @@ function AdminSection() {
                   />
                 </div>
               )}
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Caption / Treatment Name</label>
-                <input type="text" placeholder="Acne Therapy Results" value={newGallery.caption} onChange={(e) => setNewGallery({ ...newGallery, caption: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+              <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Caption / Treatment Name</label>
+                  <input type="text" placeholder="Acne Therapy Results" value={newGallery.caption} onChange={(e) => setNewGallery({ ...newGallery, caption: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Related Service Link (Optional)</label>
+                  <select
+                    value={newGallery.serviceSlug || ""}
+                    onChange={(e) => setNewGallery({ ...newGallery, serviceSlug: e.target.value })}
+                    className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">-- No Related Service --</option>
+                    {galleryServicesList.map((s: any) => (
+                      <option key={s.slug} value={s.slug}>{s.title}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
             <Button onClick={handleAddGallery} disabled={saving} className="rounded-xl font-bold shadow-md"><Plus className="mr-1.5 h-4 w-4" /> Add Image Asset</Button>
@@ -1219,32 +1260,94 @@ function AdminSection() {
 
           <div className="rounded-2xl border bg-white p-6 shadow-sm">
             <h2 className="text-base font-extrabold tracking-tight mb-4">Gallery Image Catalog</h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {data.map((g, idx) => (
-                <div key={g.id || idx} className="rounded-xl border p-3 bg-secondary/10 flex flex-col justify-between space-y-2">
-                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                    {g.beforeSrc && g.afterSrc ? (
-                      <div className="grid grid-cols-2 h-full w-full relative">
-                        <img src={g.beforeSrc} alt="before" className="h-full w-full object-cover" />
-                        <img src={g.afterSrc} alt="after" className="h-full w-full object-cover border-l border-white" />
-                        <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">Before/After</span>
-                      </div>
-                    ) : (
-                      <img src={g.src} alt={g.caption} className="h-full w-full object-cover" />
-                    )}
-                    <span className="absolute top-2 left-2 bg-secondary/80 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full">{g.category}</span>
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs font-bold text-foreground truncate max-w-[130px]">{g.caption}</span>
-                    <div className="flex items-center">
-                      <Button onClick={() => setEditingItem(g)} variant="ghost" size="icon" className="rounded-full h-7 w-7 text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
-                      {g.id && (
-                        <Button onClick={() => handleDeleteItem("gallery", g.id)} variant="ghost" size="icon" className="rounded-full h-7 w-7 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+            
+            {/* Search and Category filter controls */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-5">
+              {/* Category filter tabs */}
+              <div className="flex flex-wrap gap-2 p-1 border rounded-2xl bg-secondary/10 w-fit">
+                {["All", "Doctor", "Clinic", "Treatment", "Before & After"].map((cat) => {
+                  const count = cat === "All"
+                    ? data.length
+                    : data.filter((g) => g.category === cat || (cat === "Treatment" && g.category === "Treatments")).length;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setGalleryCatFilter(cat)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5",
+                        galleryCatFilter === cat ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                       )}
+                    >
+                      {cat}
+                      <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full font-bold", galleryCatFilter === cat ? "bg-primary/10 text-primary" : "bg-secondary/60 text-muted-foreground")}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search bar */}
+              <div className="relative w-full sm:w-64">
+                <input
+                  type="text"
+                  placeholder="Search catalog by caption..."
+                  value={adminGallerySearch}
+                  onChange={(e) => setAdminGallerySearch(e.target.value)}
+                  className="w-full pl-3 pr-8 py-1.5 text-xs bg-white border border-primary/15 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
+                />
+                {adminGallerySearch && (
+                  <button onClick={() => setAdminGallerySearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold">✕</button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {data
+                .filter((g) => {
+                  const cat = g.category;
+                  const matchesCat =
+                    galleryCatFilter === "All" ||
+                    cat === galleryCatFilter ||
+                    (galleryCatFilter === "Treatment" && cat === "Treatments");
+                  const matchesSearch =
+                    !adminGallerySearch.trim() ||
+                    (g.caption || "").toLowerCase().includes(adminGallerySearch.toLowerCase().trim());
+                  return matchesCat && matchesSearch;
+                })
+                .map((g, idx) => {
+                  const linked = galleryServicesList.find(s => s.slug === g.serviceSlug);
+                  return (
+                    <div key={g.id || idx} className="rounded-xl border p-3 bg-secondary/10 flex flex-col justify-between space-y-2">
+                      <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                        {g.beforeSrc && g.afterSrc ? (
+                          <div className="grid grid-cols-2 h-full w-full relative">
+                            <img src={g.beforeSrc} alt="before" className="h-full w-full object-cover" />
+                            <img src={g.afterSrc} alt="after" className="h-full w-full object-cover border-l border-white" />
+                            <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">Before/After</span>
+                          </div>
+                        ) : (
+                          <img src={g.src} alt={g.caption} className="h-full w-full object-cover" />
+                        )}
+                        <span className="absolute top-2 left-2 bg-secondary/80 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full">{g.category}</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-extrabold text-foreground truncate">{g.caption}</div>
+                        {linked && (
+                          <div className="text-[10px] text-primary font-bold">Linked: {linked.title}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between pt-1 border-t border-border/20">
+                        <span className="text-[9px] font-bold text-muted-foreground">{g.category}</span>
+                        <div className="flex items-center">
+                          <Button onClick={() => setEditingItem(g)} variant="ghost" size="icon" className="rounded-full h-7 w-7 text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
+                          {g.id && (
+                            <Button onClick={() => handleDeleteItem("gallery", g.id)} variant="ghost" size="icon" className="rounded-full h-7 w-7 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -1381,6 +1484,14 @@ function AdminSection() {
                     <option value="Layers">Layers</option>
                     <option value="Star">Star</option>
                   </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Reference Image (Optional)</label>
+                  <ImageSelector
+                    label="Pick Service Reference Image"
+                    value={editingItem.imageUrl || ""}
+                    onChange={(url) => setEditingItem({ ...editingItem, imageUrl: url })}
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Service Short Summary</label>
@@ -1567,9 +1678,23 @@ function AdminSection() {
                 <div>
                   <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Category</label>
                   <select value={editingItem.category || "Clinic"} onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })} className="w-full rounded-xl border px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20">
-                    <option value="Clinic">Clinic Room</option>
-                    <option value="Treatments">Treatment Room</option>
+                    <option value="Doctor">Doctor Images</option>
+                    <option value="Clinic">Clinic Images</option>
+                    <option value="Treatment">Treatment Room</option>
                     <option value="Before & After">Before & After</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Related Service Link (Optional)</label>
+                  <select
+                    value={editingItem.serviceSlug || ""}
+                    onChange={(e) => setEditingItem({ ...editingItem, serviceSlug: e.target.value })}
+                    className="w-full rounded-xl border px-3 py-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">-- No Related Service --</option>
+                    {galleryServicesList.map((s: any) => (
+                      <option key={s.slug} value={s.slug}>{s.title}</option>
+                    ))}
                   </select>
                 </div>
                 
