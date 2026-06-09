@@ -1,14 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Sparkles, Check } from "lucide-react";
 import { ServiceIcon } from "./ServiceIcon";
-import type { Service } from "@/lib/data";
-
-const getCategory = (slug: string) => {
-  if (["prp-therapy", "hair-fall-treatment"].includes(slug)) return "Trichology";
-  if (["anti-aging-treatment", "cosmetology-procedures"].includes(slug)) return "Cosmetology";
-  if (["nail-disorders", "skin-allergy-treatment"].includes(slug)) return "Medical Care";
-  return "Dermatology";
-};
+import { getCategory, type Service } from "@/lib/data";
 
 export function ServiceCard({ service }: { service: Service }) {
   const cat = getCategory(service.slug);

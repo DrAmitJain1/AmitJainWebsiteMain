@@ -16,7 +16,8 @@ import {
   services as fallbackServices,
   testimonials as fallbackTestimonials,
   faqs as fallbackFaqs,
-  stats as fallbackStats
+  stats as fallbackStats,
+  getCategory
 } from "@/lib/data";
 import {
   getClinicSettings,
@@ -469,12 +470,7 @@ function ServicesOverview() {
     getServices().then(setServices);
   }, []);
 
-  const getCategory = (slug: string) => {
-    if (["prp-therapy", "hair-fall-treatment"].includes(slug)) return "Trichology";
-    if (["anti-aging-treatment", "cosmetology-procedures"].includes(slug)) return "Cosmetology";
-    if (["nail-disorders", "skin-allergy-treatment"].includes(slug)) return "Medical Care";
-    return "Dermatology";
-  };
+
 
   const filtered = useMemo(() => {
     if (activeTab === "All") return services.slice(0, 6);

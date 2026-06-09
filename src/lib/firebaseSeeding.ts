@@ -1,11 +1,26 @@
 import { db } from "./firebase";
 import { collection, getDocs, setDoc, doc, addDoc } from "firebase/firestore";
+import { services as fallbackServices } from "./data";
 
 export async function seedClinicDatabase() {
   try {
     const settingsSnap = await getDocs(collection(db, "settings"));
     if (!settingsSnap.empty) {
       console.log("[Firebase Seeding] Firestore is already seeded.");
+      
+      // Self-healing check: check if we have all services in the services collection
+      try {
+        const servicesSnap = await getDocs(collection(db, "services"));
+        if (servicesSnap.size < 15) {
+          console.log("[Firebase Seeding] Services count is low (" + servicesSnap.size + "). Seeding new services...");
+          for (const service of fallbackServices) {
+            await setDoc(doc(db, "services", service.slug), service);
+          }
+          console.log("[Firebase Seeding] Successfully seeded new services!");
+        }
+      } catch (err) {
+        console.warn("[Firebase Seeding] Could not auto-seed missing services:", err);
+      }
       
       // Self-healing check: check if Before & After items are present in the gallery collection
       try {
@@ -116,129 +131,7 @@ export async function seedClinicDatabase() {
     });
 
     // 4. Services Collection
-    const servicesList = [
-      {
-        slug: "acne-treatment",
-        title: "Acne Treatment",
-        short: "Clear, calm skin with dermatologist-led acne protocols.",
-        icon: "Sparkles",
-        overview: "Personalised, evidence-based acne care combining medical-grade topicals, oral therapy when needed, and in-clinic procedures like comedone extraction and chemical peels for lasting clarity.",
-        symptoms: [
-          "Whiteheads, blackheads, papules and pustules",
-          "Painful cystic or nodular acne",
-          "Oily skin with enlarged pores",
-          "Post-acne marks and scarring",
-        ],
-        causes: [
-          "Hormonal fluctuations (PCOS, puberty, stress)",
-          "Excess sebum and clogged follicles",
-          "C. acnes bacterial overgrowth",
-          "Diet, lifestyle and skincare triggers",
-        ],
-        process: [
-          { step: "Skin Analysis", detail: "Detailed grading and trigger mapping." },
-          { step: "Custom Plan", detail: "Topical + oral + procedure combination tailored to you." },
-          { step: "In-clinic Care", detail: "Peels, extractions, LED therapy as indicated." },
-          { step: "Maintenance", detail: "Long-term routine to prevent relapse and marks." },
-        ],
-        benefits: [
-          "Visibly clearer skin in 4–8 weeks",
-          "Controlled oil and reduced breakouts",
-          "Minimised marks and scarring risk",
-          "Confidence-restoring results",
-        ],
-        faqs: [
-          { q: "How long does acne treatment take?", a: "Most patients see clear improvement within 6–8 weeks with consistent care." },
-          { q: "Will my acne come back?", a: "A tailored maintenance plan dramatically lowers recurrence." },
-        ],
-      },
-      {
-        slug: "pigmentation-treatment",
-        title: "Pigmentation Treatment",
-        short: "Even-toned, luminous skin — melasma, dark spots and tan.",
-        icon: "Sun",
-        overview: "Targeted treatments for melasma, post-inflammatory pigmentation and uneven skin tone using medical peels, depigmenting serums and advanced light-based therapies.",
-        symptoms: ["Dark patches on cheeks and forehead", "Sun-tan and uneven tone", "Dark circles and spots"],
-        causes: ["UV exposure", "Hormonal shifts", "Inflammation post-acne", "Improper skincare"],
-        process: [
-          { step: "Pigment Mapping", detail: "Wood's lamp & clinical assessment." },
-          { step: "Layered Plan", detail: "SPF, depigmenting actives, peels." },
-          { step: "Boosters", detail: "Glutathione / mesotherapy as needed." },
-        ],
-        benefits: ["Brighter, even tone", "Reduced melasma & spots", "Glowing finish"],
-        faqs: [
-          { q: "Are the treatments safe for Indian skin?", a: "Yes — protocols are tuned for melanin-rich skin tones." },
-        ],
-      },
-      {
-        slug: "prp-therapy",
-        title: "PRP Therapy",
-        short: "Regrow, thicken and strengthen with your own growth factors.",
-        icon: "Droplet",
-        overview: "Platelet Rich Plasma therapy uses growth factors from your own blood to stimulate dormant follicles, improve hair density and accelerate skin repair.",
-        symptoms: ["Diffuse hair thinning", "Receding hairline", "Post-pregnancy hair fall"],
-        causes: ["Genetic alopecia", "Nutritional deficiencies", "Stress, post-illness"],
-        process: [
-          { step: "Blood Draw", detail: "Small sample, processed in-clinic." },
-          { step: "PRP Extraction", detail: "Double-spin centrifuge for high platelet yield." },
-          { step: "Scalp Injection", detail: "Microinjections into affected zones." },
-        ],
-        benefits: ["Thicker, denser hair", "Reduced shedding", "Safe, autologous"],
-        faqs: [
-          { q: "How many sessions are needed?", a: "Typically 4–6 sessions spaced 4 weeks apart." },
-        ],
-      },
-      {
-        slug: "hair-fall-treatment",
-        title: "Hair Fall Treatment",
-        short: "Stop hair loss with root-cause diagnostics and modern therapy.",
-        icon: "Scissors",
-        overview: "From trichoscopy to advanced therapies — minoxidil, oral protocols, mesotherapy and PRP — designed around your hair loss pattern.",
-        symptoms: ["Excess hair on pillow / comb", "Visible scalp", "Widening parting"],
-        causes: ["Androgenetic alopecia", "Thyroid / iron deficiency", "Telogen effluvium"],
-        process: [
-          { step: "Trichoscopy", detail: "High-magnification scalp analysis." },
-          { step: "Lab Panel", detail: "Identify deficiencies & hormonal causes." },
-          { step: "Treatment", detail: "Topicals + procedures + nutrition plan." },
-        ],
-        benefits: ["Reduced shedding in 8–12 weeks", "Regrowth in dormant zones"],
-        faqs: [{ q: "Is treatment lifelong?", a: "Maintenance varies by cause; many patients reduce therapy over time." }],
-      },
-      {
-        slug: "chemical-peel",
-        title: "Chemical Peel",
-        short: "Renew dull, congested skin with safe medical peels.",
-        icon: "Layers",
-        overview: "Customised glycolic, salicylic, mandelic and combination peels to brighten, smoothen and treat acne, pigmentation and ageing.",
-        symptoms: ["Dull, congested skin", "Acne marks", "Open pores"],
-        causes: ["Sun damage", "Dead-cell buildup", "Ageing"],
-        process: [
-          { step: "Prep", detail: "2-week priming routine." },
-          { step: "Peel Session", detail: "Calibrated to skin type." },
-          { step: "Recovery", detail: "Post-peel care to lock results." },
-        ],
-        benefits: ["Instant glow", "Smoother texture", "Reduced pigmentation"],
-        faqs: [{ q: "How many sessions?", a: "A series of 4–6 sessions every 2–3 weeks works best." }],
-      },
-      {
-        slug: "anti-aging-treatment",
-        title: "Anti-aging Treatment",
-        short: "Lift, firm and restore — naturally and elegantly.",
-        icon: "Star",
-        overview: "Botox, dermal fillers, skin boosters, microneedling RF and medical-grade skincare to slow visible signs of ageing.",
-        symptoms: ["Fine lines & wrinkles", "Loss of firmness", "Dull skin"],
-        causes: ["Collagen loss", "Sun damage", "Lifestyle"],
-        process: [
-          { step: "Consult", detail: "Facial assessment & goal mapping." },
-          { step: "Procedure", detail: "Tox, fillers or energy-based devices." },
-          { step: "Maintenance", detail: "Skincare & periodic touch-ups." },
-        ],
-        benefits: ["Natural-looking refresh", "Firmer skin", "Long-lasting glow"],
-        faqs: [{ q: "Will I look frozen?", a: "Our approach prioritises natural movement and balance." }],
-      },
-    ];
-
-    for (const service of servicesList) {
+    for (const service of fallbackServices) {
       await setDoc(doc(db, "services", service.slug), service);
     }
 

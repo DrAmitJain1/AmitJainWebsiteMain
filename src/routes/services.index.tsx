@@ -5,15 +5,8 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { PageHero } from "@/components/site/PageHero";
 import { ServiceCard } from "@/components/site/ServiceCard";
 import { getServices } from "@/lib/firebaseServices";
-import { services as fallbackServices } from "@/lib/data";
+import { services as fallbackServices, getCategory } from "@/lib/data";
 import { cn } from "@/lib/utils";
-
-const getCategory = (slug: string) => {
-  if (["prp-therapy", "hair-fall-treatment"].includes(slug)) return "Trichology";
-  if (["anti-aging-treatment", "cosmetology-procedures"].includes(slug)) return "Cosmetology";
-  if (["nail-disorders", "skin-allergy-treatment"].includes(slug)) return "Medical Care";
-  return "Dermatology";
-};
 
 const displayCategories = ["Dermatology", "Cosmetology", "Trichology", "Medical Care"];
 
