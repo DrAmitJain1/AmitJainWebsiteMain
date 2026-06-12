@@ -8,7 +8,7 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 import { getDoctorInfo, getClinicSettings } from "@/lib/firebaseServices";
 import { clinic as fallbackClinic } from "@/lib/clinic";
 
-const publications = [
+const fallbackPublications = [
   {
     title: "Annular Elastolytic Giant Cell Granuloma: A Rare Mimicker of Common Annular Dermatoses",
     journal: "BMJ Case Reports",
@@ -63,7 +63,7 @@ export const Route = createFileRoute("/about")({
 
 function AboutPage() {
   const [clinic, setClinic] = useState(fallbackClinic);
-  const [doctor, setDoctor] = useState({
+  const [doctor, setDoctor] = useState<any>({
     name: "Dr. Amit Jain",
     role: "Chief Dermatologist & Hair Transplant Specialist",
     qualifications: [
@@ -75,14 +75,17 @@ function AboutPage() {
       "Cosmetology Society of India (CSI)",
       "Association of Hair Restoration Surgeons (AHRS)",
     ],
-    imageUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=1200&q=70",
+    imageUrl: "https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png",
     bio: "Dr. Amit Jain is a highly experienced skin specialist based in Katraj, Pune. Over the last 10+ years, he has successfully delivered clinical and aesthetic solutions for thousands of patients with a patient-first ethos.",
+    publications: []
   });
 
   useEffect(() => {
     getClinicSettings().then(setClinic);
     getDoctorInfo().then(setDoctor);
   }, []);
+
+  const publicationsList = doctor.publications && doctor.publications.length > 0 ? doctor.publications : fallbackPublications;
 
   const qualifications = [
     { icon: GraduationCap, t: "MD - Dermatology topper", d: doctor.qualifications[1] || "Secured first rank in university" },
@@ -166,7 +169,7 @@ function AboutPage() {
               Dr. Amit Jain has contributed to clinical dermatology research published in internationally indexed, peer-reviewed journals. These publications reflect a commitment to advancing evidence-based dermatology practice.
             </p>
             <div className="grid gap-5">
-              {publications.map((pub, idx) => (
+              {publicationsList.map((pub, idx) => (
                 <a
                   key={idx}
                   href={pub.url}

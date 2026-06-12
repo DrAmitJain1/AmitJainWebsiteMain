@@ -7,6 +7,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useLocation
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
@@ -128,10 +129,79 @@ import { seedClinicDatabase } from "@/lib/firebaseSeeding";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
 
   useEffect(() => {
-    seedClinicDatabase();
+    // seedClinicDatabase(); // Commented out to prevent automatic seeding/overwriting of clinic settings and mock data on refresh.
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const cleanupScrollLock = () => {
+      // Check if there are active overlays (Radix dialogues, dropdowns, menus, mobile draw sidebars)
+      const activeOverlays = document.querySelectorAll(
+        '[role="dialog"], [data-state="open"], [role="menu"], [data-radix-portal], .radix-overlay'
+      );
+      if (activeOverlays.length === 0) {
+        let restored = false;
+        if (
+          document.body.style.overflow === "hidden" ||
+          document.body.style.overflow === "clip" ||
+          document.body.style.pointerEvents === "none" ||
+          document.body.hasAttribute("data-scroll-locked")
+        ) {
+          document.body.style.overflow = "";
+          document.body.style.pointerEvents = "";
+          document.body.removeAttribute("data-scroll-locked");
+          restored = true;
+        }
+        if (
+          document.documentElement.style.overflow === "hidden" ||
+          document.documentElement.style.overflow === "clip" ||
+          document.documentElement.style.pointerEvents === "none"
+        ) {
+          document.documentElement.style.overflow = "";
+          document.documentElement.style.pointerEvents = "";
+          restored = true;
+        }
+        if (restored) {
+          console.log("[Scroll Lock Cleanup] Restored scroll settings since no active overlays remain.");
+        }
+      }
+    };
+
+    // Run initial cleanup
+    cleanupScrollLock();
+
+    // Create a MutationObserver to watch attribute/style changes on html and body
+    const observer = new MutationObserver(() => {
+      cleanupScrollLock();
+    });
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["style", "data-scroll-locked"]
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["style"]
+    });
+
+    // Clean up on route transition
+    cleanupScrollLock();
+
+    // Setup window focus and click/touch listeners to catch animations or focus transitions
+    const handleEvent = () => setTimeout(cleanupScrollLock, 100);
+    window.addEventListener("click", handleEvent);
+    window.addEventListener("touchend", handleEvent);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("click", handleEvent);
+      window.removeEventListener("touchend", handleEvent);
+    };
+  }, [location.pathname]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -140,3 +210,4 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+

@@ -42,7 +42,7 @@ export function WhatsAppFab() {
             <div className="flex items-center gap-3">
               <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden border-2 border-white/40 bg-white">
                 <img
-                  src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&q=70"
+                  src="https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png"
                   alt="Doctor"
                   className="h-full w-full object-cover"
                 />

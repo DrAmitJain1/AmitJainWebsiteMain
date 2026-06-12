@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Plus, CalendarCheck, Home, Sparkles, FileText, Image as ImageIcon,
-  MessageSquare, Search, Trash2, Save, ArrowLeft, Loader2, Edit3, X, HelpCircle, Phone
+  MessageSquare, Search, Trash2, Save, ArrowLeft, Loader2, Edit3, X, HelpCircle, Phone,
+  User, Award, Star, Settings, CheckCircle2, ShieldCheck, Heart, Info, BookOpen, ExternalLink
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
@@ -198,6 +199,8 @@ function AdminSection() {
   const [clinicSettings, setClinicSettings] = useState<any>(null);
   const [heroSettings, setHeroSettings] = useState<any>(null);
   const [doctorSettings, setDoctorSettings] = useState<any>(null);
+  const [specialtiesSettings, setSpecialtiesSettings] = useState<any>(null);
+  const [whyChooseUsSettings, setWhyChooseUsSettings] = useState<any>(null);
 
   // 2. Generic Add Item States
   const [newService, setNewService] = useState({
@@ -237,6 +240,14 @@ function AdminSection() {
 
   // 3. SEO Settings State
   const [seoSettings, setSeoSettings] = useState<any>({ title: "", description: "", canonicalUrl: "" });
+
+  // 3.5 Redesigned Active Tabs
+  const [homepageTab, setHomepageTab] = useState<"contact" | "hero" | "doctor" | "specialties" | "whychoose">("contact");
+  const [servicesTab, setServicesTab] = useState<"add" | "manage">("manage");
+  const [blogsTab, setBlogsTab] = useState<"add" | "manage">("manage");
+  const [testimonialsTab, setTestimonialsTab] = useState<"add" | "manage">("manage");
+  const [faqsTab, setFaqsTab] = useState<"add" | "manage">("manage");
+  const [galleryTab, setGalleryTab] = useState<"add" | "manage">("manage");
 
   // 4. Editing State
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -294,13 +305,58 @@ function AdminSection() {
               "Cosmetology Society of India (CSI)",
               "Association of Hair Restoration Surgeons (AHRS)",
             ],
-            imageUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=1200&q=70",
+            imageUrl: "https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png",
             bio: "Dr. Amit Jain is a highly experienced skin specialist based in Katraj, Pune. Over the last 10+ years, he has successfully delivered clinical and aesthetic solutions for thousands of patients with a patient-first ethos.",
+            publications: []
           };
           if (docSnap.exists()) {
             doctorData = docSnap.data() as any;
           }
           setDoctorSettings(doctorData);
+
+          const specSnap = await getDoc(doc(db, "homepage", "specialties"));
+          if (specSnap.exists()) {
+            setSpecialtiesSettings(specSnap.data());
+          } else {
+            setSpecialtiesSettings({
+              eyebrow: "What we treat",
+              titleMain: "Personalised",
+              titleCursive: "skin & hair",
+              titleSuffix: "specialties",
+              description: "Every clinical solution is calibrated under a single specialist to achieve maximum safety and natural results.",
+              items: [
+                { title: "Skin Treatments", desc: "Comprehensive diagnostic care for acne, pigmentation, eczema, psoriasis, and deep scars.", icon: "Sparkles", tags: ["Acne Care", "Pigmentation", "Peels", "Skin Allergies"] },
+                { title: "Hair Treatments", desc: "Advanced trichology services for male/female pattern hair loss, PRP growth factor therapy.", icon: "Award", tags: ["PRP Therapy", "Hair Thinning", "Mesotherapy", "Scalp Care"] },
+                { title: "Cosmetology", desc: "Anti-aging injectables, fillers, medical Hydrafacials, carbon facials and skin boosters.", icon: "Star", tags: ["Hydrafacial", "Anti-aging", "Glow Facials", "Skin Boosters"] }
+              ]
+            });
+          }
+
+          const wcuSnap = await getDoc(doc(db, "homepage", "whyChooseUs"));
+          if (wcuSnap.exists()) {
+            setWhyChooseUsSettings(wcuSnap.data());
+          } else {
+            setWhyChooseUsSettings({
+              eyebrow: "Clinical Integrity",
+              titleMain: "Why Choose",
+              titleCursive: "Dr. Amit Jain",
+              leftCardBadge: "MD - Dermatology (Skin)",
+              leftCardTitleMain: "Dermatology built on clinical",
+              leftCardTitleCursive: "Integrity",
+              leftCardDesc: "Dr. Amit Jain believes that skincare is a medical science, not a commercial transaction. We completely reject the aggressive sales targets common in aesthetic clinics, prioritizing your skin's health above all else.",
+              leftCardBullets: [
+                "10+ Years Active Clinical Experience",
+                "15,000+ Successfully Treated Patients",
+                "100% Evidence-Based Medical Protocols"
+              ],
+              items: [
+                { t: "Expert-Led Care Only", d: "Unlike general aesthetic clinics, every consultation, diagnosis, and clinical procedure is directly handled by Dr. Amit Jain himself.", icon: "Award" },
+                { t: "FDA-Cleared Technology", d: "Equipped with gold-standard, FDA-cleared aesthetic lasers and double-spin clinical PRP centrifuges for maximum efficacy.", icon: "ShieldCheck" },
+                { t: "Indian Skin Specialization", d: "Calibrated protocols specially designed for Type IV-VI Indian skin, focusing strictly on melanocyte safety to prevent post-treatment pigmentation.", icon: "Heart" },
+                { t: "Transparent & Ethical Pricing", d: "Upfront pricing schedules with absolutely zero forced cosmetic packages, hidden add-ons, or sales targets.", icon: "CheckCircle2" }
+              ]
+            });
+          }
         } else if (section === "services") {
           const snap = await getDocs(collection(db, "services"));
           const list: any[] = [];
@@ -365,6 +421,18 @@ function AdminSection() {
       await setDoc(doc(db, "hero", "content"), heroSettings);
       if (doctorSettings) {
         await setDoc(doc(db, "doctor", "info"), doctorSettings);
+      }
+      if (specialtiesSettings) {
+        await setDoc(doc(db, "homepage", "specialties"), specialtiesSettings);
+      }
+      if (whyChooseUsSettings) {
+        const cleanedWhyChooseUs = {
+          ...whyChooseUsSettings,
+          leftCardBullets: whyChooseUsSettings.leftCardBullets
+            ? whyChooseUsSettings.leftCardBullets.map((x: string) => x.trim()).filter(Boolean)
+            : []
+        };
+        await setDoc(doc(db, "homepage", "whyChooseUs"), cleanedWhyChooseUs);
       }
       toast.success("Homepage & Clinic configuration saved!");
     } catch (err: any) {
@@ -492,8 +560,8 @@ function AdminSection() {
     setSaving(true);
     try {
       const payload = galleryAssetType === "standard"
-        ? { src: newGallery.src, category: newGallery.category, caption: newGallery.caption, serviceSlug: newGallery.serviceSlug || "" }
-        : { beforeSrc: newGallery.beforeSrc, afterSrc: newGallery.afterSrc, category: "Before & After", caption: newGallery.caption, serviceSlug: newGallery.serviceSlug || "" };
+        ? { src: newGallery.src, category: newGallery.category, caption: newGallery.caption, serviceSlug: newGallery.serviceSlug || "", createdAt: new Date().toISOString() }
+        : { beforeSrc: newGallery.beforeSrc, afterSrc: newGallery.afterSrc, category: "Before & After", caption: newGallery.caption, serviceSlug: newGallery.serviceSlug || "", createdAt: new Date().toISOString() };
          
       const docRef = await addDoc(collection(db, "gallery"), payload);
       toast.success("New gallery asset successfully added!");
@@ -646,53 +714,147 @@ function AdminSection() {
 
       {/* 1. HOMEPAGE & SETTINGS */}
       {section === "homepage" && clinicSettings && heroSettings && (
-        <div className="space-y-6 rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-base font-extrabold tracking-tight">Clinic Contact & Settings</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinic Brand Name</label>
-              <input type="text" value={clinicSettings.name} onChange={(e) => setClinicSettings({ ...clinicSettings, name: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+        <div className="space-y-6">
+          {/* Header Card with Navigation Tabs */}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+              <div>
+                <h2 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-primary animate-spin-slow" /> Homepage & Profile Settings
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Customize your clinic information, biography, banner, and key home sections.</p>
+              </div>
+              <Button onClick={handleSaveHomepage} disabled={saving} className="rounded-xl font-bold shadow-md self-end md:self-auto bg-primary">
+                {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+                Save All Home Configuration
+              </Button>
             </div>
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinic Tagline</label>
-              <input type="text" value={clinicSettings.tagline} onChange={(e) => setClinicSettings({ ...clinicSettings, tagline: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Phone Number</label>
-              <input type="text" value={clinicSettings.phone} onChange={(e) => setClinicSettings({ ...clinicSettings, phone: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinic Email Address</label>
-              <input type="text" value={clinicSettings.email} onChange={(e) => setClinicSettings({ ...clinicSettings, email: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+
+            {/* Navigation Tabs */}
+            <div className="flex flex-wrap gap-1.5 bg-secondary/35 p-1.5 rounded-2xl">
+              {[
+                { id: "contact", label: "📞 Contact Info" },
+                { id: "hero", label: "🖼️ Hero Banner" },
+                { id: "doctor", label: "👨‍⚕️ Doctor Biography" },
+                { id: "specialties", label: "✨ Specialties Copy" },
+                { id: "whychoose", label: "🤝 Why Choose Us" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setHomepageTab(tab.id as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                    homepageTab === tab.id
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-muted-foreground hover:bg-white/40 hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <h2 className="text-base font-extrabold tracking-tight pt-4 border-t">Hero Banner Copy</h2>
-          <div className="grid gap-4">
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Hero Title Heading</label>
-              <input type="text" value={heroSettings.title} onChange={(e) => setHeroSettings({ ...heroSettings, title: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Hero Subtitle Text</label>
-              <textarea value={heroSettings.subtitle} onChange={(e) => setHeroSettings({ ...heroSettings, subtitle: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-20 resize-none focus:ring-2 focus:ring-primary/20" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">CTA Button Text</label>
-              <input type="text" value={heroSettings.ctaText} onChange={(e) => setHeroSettings({ ...heroSettings, ctaText: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-            </div>
-            
-            {/* Image Selector for Hero Settings */}
-            <ImageSelector 
-              label="Hero Banner Image Asset"
-              value={heroSettings.imageUrl || ""}
-              onChange={(url) => setHeroSettings({ ...heroSettings, imageUrl: url })}
-            />
-          </div>
+          {/* Tab Content 1: Contact Details */}
+          {homepageTab === "contact" && (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Contact Settings Info</strong>
+                  This updates your brand name, phone, and email shown in the header, footer, and contact page. Make sure the phone number matches your active WhatsApp.
+                </div>
+              </div>
 
-          {doctorSettings && (
-            <>
-              <h2 className="text-base font-extrabold tracking-tight pt-4 border-t">Doctor Biography & Details</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinic Brand Name</label>
+                  <input type="text" value={clinicSettings.name} onChange={(e) => setClinicSettings({ ...clinicSettings, name: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinic Tagline</label>
+                  <input type="text" value={clinicSettings.tagline} onChange={(e) => setClinicSettings({ ...clinicSettings, tagline: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Phone Number (WhatsApp Direct)</label>
+                  <input type="text" value={clinicSettings.phone} onChange={(e) => setClinicSettings({ ...clinicSettings, phone: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinic Email Address</label>
+                  <input type="text" value={clinicSettings.email} onChange={(e) => setClinicSettings({ ...clinicSettings, email: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Content 2: Hero Banner */}
+          {homepageTab === "hero" && (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Hero Banner Info</strong>
+                  This updates the top banner section of your homepage. We recommend keeping titles short and using a high-quality clinic or treatment image (1200x700).
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Badge Capsule Text (e.g. "Topper MD")</label>
+                    <input type="text" value={heroSettings.badgeText || ""} onChange={(e) => setHeroSettings({ ...heroSettings, badgeText: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Hero Title Main Heading</label>
+                    <input type="text" value={heroSettings.title} onChange={(e) => setHeroSettings({ ...heroSettings, title: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Hero Title Cursive Part</label>
+                    <input type="text" value={heroSettings.titleCursive || ""} onChange={(e) => setHeroSettings({ ...heroSettings, titleCursive: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Hero Title Suffix Part</label>
+                    <input type="text" value={heroSettings.titleSuffix || ""} onChange={(e) => setHeroSettings({ ...heroSettings, titleSuffix: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Happy Patients Stat Text</label>
+                    <input type="text" value={heroSettings.happyPatientsText || ""} onChange={(e) => setHeroSettings({ ...heroSettings, happyPatientsText: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Doctor Card Highlight Info</label>
+                    <input type="text" value={heroSettings.doctorCardHighlight || ""} onChange={(e) => setHeroSettings({ ...heroSettings, doctorCardHighlight: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Hero Subtitle Paragraph</label>
+                  <textarea value={heroSettings.subtitle} onChange={(e) => setHeroSettings({ ...heroSettings, subtitle: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-20 resize-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Call-To-Action Button Text</label>
+                  <input type="text" value={heroSettings.ctaText} onChange={(e) => setHeroSettings({ ...heroSettings, ctaText: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                
+                <ImageSelector 
+                  label="Hero Banner Image Asset"
+                  value={heroSettings.imageUrl || ""}
+                  onChange={(url) => setHeroSettings({ ...heroSettings, imageUrl: url })}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tab Content 3: Doctor Biography */}
+          {homepageTab === "doctor" && doctorSettings && (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Doctor Biography Info</strong>
+                  This updates your biography, credentials, and published research papers shown on the **About the Doctor** page. Remember to add clear years/DOIs for publications.
+                </div>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Doctor Name</label>
@@ -703,10 +865,9 @@ function AdminSection() {
                   <input type="text" value={doctorSettings.role || ""} onChange={(e) => setDoctorSettings({ ...doctorSettings, role: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
                 
-                {/* Image Selector for Doctor Settings */}
                 <div className="sm:col-span-2">
                   <ImageSelector 
-                    label="Doctor Avatar image profile"
+                    label="Doctor Avatar Profile Image"
                     value={doctorSettings.imageUrl || ""}
                     onChange={(url) => setDoctorSettings({ ...doctorSettings, imageUrl: url })}
                   />
@@ -716,289 +877,830 @@ function AdminSection() {
                   <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinical Biography Description</label>
                   <textarea value={doctorSettings.bio || ""} onChange={(e) => setDoctorSettings({ ...doctorSettings, bio: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-24 resize-none focus:ring-2 focus:ring-primary/20" />
                 </div>
+
+                {/* Publications Editor (Peer-Reviewed) */}
+                <div className="sm:col-span-2 border-t pt-4 mt-2">
+                  <h3 className="text-sm font-bold text-foreground mb-3 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4 text-primary" /> Peer-Reviewed Publications ({doctorSettings.publications?.length || 0})</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newPubs = doctorSettings.publications ? [...doctorSettings.publications] : [];
+                        newPubs.push({
+                          title: "",
+                          journal: "",
+                          journalShort: "",
+                          authors: "",
+                          year: new Date().getFullYear().toString(),
+                          volume: "",
+                          doi: "",
+                          url: "",
+                          type: "Case Report",
+                          level: "International",
+                          color: "from-blue-600 to-blue-800"
+                        });
+                        setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                      }}
+                      className="h-8 text-xs rounded-xl font-bold shadow-sm"
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" /> Add Publication
+                    </Button>
+                  </h3>
+
+                  <div className="space-y-4">
+                    {doctorSettings.publications && doctorSettings.publications.map((pub: any, idx: number) => (
+                      <div key={idx} className="border rounded-2xl p-4 bg-secondary/5 space-y-3 relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPubs = doctorSettings.publications.filter((_: any, i: number) => i !== idx);
+                            setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                          }}
+                          className="absolute top-3 right-3 text-destructive hover:text-destructive/80"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        <div className="font-extrabold text-xs text-primary">Publication #{idx + 1}</div>
+                        
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="sm:col-span-2">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Title</label>
+                            <input
+                              type="text"
+                              value={pub.title || ""}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, title: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Journal Full Name</label>
+                            <input
+                              type="text"
+                              value={pub.journal || ""}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, journal: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Journal Short Name</label>
+                            <input
+                              type="text"
+                              value={pub.journalShort || ""}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, journalShort: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Authors (comma separated)</label>
+                            <input
+                              type="text"
+                              value={pub.authors || ""}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, authors: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Year</label>
+                            <input
+                              type="text"
+                              value={pub.year || ""}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, year: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Volume / Issue</label>
+                            <input
+                              type="text"
+                              value={pub.volume || ""}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, volume: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">DOI</label>
+                            <input
+                              type="text"
+                              value={pub.doi || ""}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, doi: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">URL Link</label>
+                            <input
+                              type="text"
+                              value={pub.url || ""}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, url: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Type</label>
+                            <select
+                              value={pub.type || "Case Report"}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, type: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            >
+                              <option value="Case Report">Case Report</option>
+                              <option value="Original Research">Original Research</option>
+                              <option value="Review Article">Review Article</option>
+                              <option value="Short Communication">Short Communication</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Level</label>
+                            <select
+                              value={pub.level || "International"}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, level: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            >
+                              <option value="International">International</option>
+                              <option value="National">National</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Theme Gradient Color</label>
+                            <select
+                              value={pub.color || "from-blue-600 to-blue-800"}
+                              onChange={(e) => {
+                                const newPubs = [...doctorSettings.publications];
+                                newPubs[idx] = { ...pub, color: e.target.value };
+                                setDoctorSettings({ ...doctorSettings, publications: newPubs });
+                              }}
+                              className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                            >
+                              <option value="from-blue-600 to-blue-800">Blue Gradient</option>
+                              <option value="from-orange-500 to-orange-700">Orange Gradient</option>
+                              <option value="from-purple-600 to-purple-800">Purple Gradient</option>
+                              <option value="from-emerald-600 to-emerald-800">Emerald Gradient</option>
+                              <option value="from-red-600 to-red-800">Red Gradient</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </>
+            </div>
           )}
 
-          <Button onClick={handleSaveHomepage} disabled={saving} className="rounded-xl mt-4 font-bold shadow-md">
-            {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-            Save Home Configuration
-          </Button>
+          {/* Tab Content 4: Specialties */}
+          {homepageTab === "specialties" && specialtiesSettings && (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Specialties Section Info</strong>
+                  This section configures the treatments categories shown on the homepage (usually Skin, Hair, Cosmetology). Recommend keeping descriptions concise.
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Section Eyebrow</label>
+                  <input type="text" value={specialtiesSettings.eyebrow || ""} onChange={(e) => setSpecialtiesSettings({ ...specialtiesSettings, eyebrow: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Title Main Part</label>
+                  <input type="text" value={specialtiesSettings.titleMain || ""} onChange={(e) => setSpecialtiesSettings({ ...specialtiesSettings, titleMain: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Title Cursive Part</label>
+                  <input type="text" value={specialtiesSettings.titleCursive || ""} onChange={(e) => setSpecialtiesSettings({ ...specialtiesSettings, titleCursive: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Title Suffix Part</label>
+                  <input type="text" value={specialtiesSettings.titleSuffix || ""} onChange={(e) => setSpecialtiesSettings({ ...specialtiesSettings, titleSuffix: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Section Description</label>
+                  <textarea value={specialtiesSettings.description || ""} onChange={(e) => setSpecialtiesSettings({ ...specialtiesSettings, description: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-20 resize-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <h3 className="text-sm font-bold text-foreground">Specialties Cards (3 Cards)</h3>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {specialtiesSettings.items && specialtiesSettings.items.map((item: any, idx: number) => (
+                    <div key={idx} className="border rounded-2xl p-4 space-y-3 bg-secondary/5">
+                      <div className="font-extrabold text-xs text-primary">Card #{idx + 1}</div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Title</label>
+                        <input type="text" value={item.title || ""} onChange={(e) => {
+                          const newItems = [...specialtiesSettings.items];
+                          newItems[idx] = { ...item, title: e.target.value };
+                          setSpecialtiesSettings({ ...specialtiesSettings, items: newItems });
+                        }} className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Icon</label>
+                        <select value={item.icon || "Sparkles"} onChange={(e) => {
+                          const newItems = [...specialtiesSettings.items];
+                          newItems[idx] = { ...item, icon: e.target.value };
+                          setSpecialtiesSettings({ ...specialtiesSettings, items: newItems });
+                        }} className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none">
+                          <option value="Sparkles">Sparkles</option>
+                          <option value="Award">Award</option>
+                          <option value="Star">Star</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Description</label>
+                        <textarea value={item.desc || ""} onChange={(e) => {
+                          const newItems = [...specialtiesSettings.items];
+                          newItems[idx] = { ...item, desc: e.target.value };
+                          setSpecialtiesSettings({ ...specialtiesSettings, items: newItems });
+                        }} className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white h-16 resize-none outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Featured Tags (comma separated)</label>
+                        <input type="text" value={item.tags ? item.tags.join(", ") : ""} onChange={(e) => {
+                          const newItems = [...specialtiesSettings.items];
+                          newItems[idx] = { ...item, tags: e.target.value.split(",").map(x => x.trim()).filter(Boolean) };
+                          setSpecialtiesSettings({ ...specialtiesSettings, items: newItems });
+                        }} className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Content 5: Why Choose Us */}
+          {homepageTab === "whychoose" && whyChooseUsSettings && (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Why Choose Us Info</strong>
+                  This updates the value propositions and reasons why patients should consult you. Keep bullets clear and one per line.
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Section Eyebrow</label>
+                  <input type="text" value={whyChooseUsSettings.eyebrow || ""} onChange={(e) => setWhyChooseUsSettings({ ...whyChooseUsSettings, eyebrow: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Title Main Part</label>
+                  <input type="text" value={whyChooseUsSettings.titleMain || ""} onChange={(e) => setWhyChooseUsSettings({ ...whyChooseUsSettings, titleMain: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Title Cursive Part</label>
+                  <input type="text" value={whyChooseUsSettings.titleCursive || ""} onChange={(e) => setWhyChooseUsSettings({ ...whyChooseUsSettings, titleCursive: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Left Card Badge</label>
+                  <input type="text" value={whyChooseUsSettings.leftCardBadge || ""} onChange={(e) => setWhyChooseUsSettings({ ...whyChooseUsSettings, leftCardBadge: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Left Card Title Main Part</label>
+                  <input type="text" value={whyChooseUsSettings.leftCardTitleMain || ""} onChange={(e) => setWhyChooseUsSettings({ ...whyChooseUsSettings, leftCardTitleMain: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Left Card Title Cursive Part</label>
+                  <input type="text" value={whyChooseUsSettings.leftCardTitleCursive || ""} onChange={(e) => setWhyChooseUsSettings({ ...whyChooseUsSettings, leftCardTitleCursive: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Left Card Description</label>
+                  <textarea value={whyChooseUsSettings.leftCardDesc || ""} onChange={(e) => setWhyChooseUsSettings({ ...whyChooseUsSettings, leftCardDesc: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-20 resize-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Left Card Bullet Points (One per line)</label>
+                  <textarea value={whyChooseUsSettings.leftCardBullets ? whyChooseUsSettings.leftCardBullets.join("\n") : ""} onChange={(e) => setWhyChooseUsSettings({ ...whyChooseUsSettings, leftCardBullets: e.target.value.split("\n") })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-24 resize-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <h3 className="text-sm font-bold text-foreground">Why Choose Value Cards (4 Cards)</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {whyChooseUsSettings.items && whyChooseUsSettings.items.map((item: any, idx: number) => (
+                    <div key={idx} className="border rounded-2xl p-4 space-y-3 bg-secondary/5">
+                      <div className="font-extrabold text-xs text-primary">Value Card #{idx + 1}</div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Title</label>
+                        <input type="text" value={item.t || ""} onChange={(e) => {
+                          const newItems = [...whyChooseUsSettings.items];
+                          newItems[idx] = { ...item, t: e.target.value };
+                          setWhyChooseUsSettings({ ...whyChooseUsSettings, items: newItems });
+                        }} className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Icon</label>
+                        <select value={item.icon || "Award"} onChange={(e) => {
+                          const newItems = [...whyChooseUsSettings.items];
+                          newItems[idx] = { ...item, icon: e.target.value };
+                          setWhyChooseUsSettings({ ...whyChooseUsSettings, items: newItems });
+                        }} className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none">
+                          <option value="Award">Award</option>
+                          <option value="ShieldCheck">ShieldCheck</option>
+                          <option value="Heart">Heart</option>
+                          <option value="CheckCircle2">CheckCircle2</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Description</label>
+                        <textarea value={item.d || ""} onChange={(e) => {
+                          const newItems = [...whyChooseUsSettings.items];
+                          newItems[idx] = { ...item, d: e.target.value };
+                          setWhyChooseUsSettings({ ...whyChooseUsSettings, items: newItems });
+                        }} className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white h-16 resize-none outline-none" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Save bar */}
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleSaveHomepage} disabled={saving} className="rounded-xl font-bold shadow-md bg-primary">
+              {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+              Save All Home Configuration
+            </Button>
+          </div>
         </div>
       )}
 
       {/* 2. CLINIC SERVICES (Task 3) */}
       {section === "services" && (
-        <div className="space-y-6">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6">
-            <h2 className="text-base font-extrabold tracking-tight">Add New Treatment</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Card with Navigation Tabs */}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Treatment Name</label>
-                <input type="text" placeholder="Hydrafacial Treatment" value={newService.title} onChange={(e) => setNewService({ ...newService, title: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Unique Slug Identifier</label>
-                <input type="text" placeholder="hydrafacial-glow" value={newService.slug} onChange={(e) => setNewService({ ...newService, slug: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Service Icon (Visual SVG Representation)</label>
-                <select value={newService.icon} onChange={(e) => setNewService({ ...newService, icon: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20">
-                  <option value="Sparkles">Sparkles</option>
-                  <option value="Sun">Sun</option>
-                  <option value="Droplet">Droplet</option>
-                  <option value="Scissors">Scissors</option>
-                  <option value="Layers">Layers</option>
-                  <option value="Star">Star</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Reference Image (Optional)</label>
-                <ImageSelector
-                  label="Pick Service Image"
-                  value={newService.imageUrl || ""}
-                  onChange={(url) => setNewService({ ...newService, imageUrl: url })}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Short Excerpt Summary</label>
-                <input type="text" placeholder="Instant hydrating facial for dull, pigmented skin." value={newService.short} onChange={(e) => setNewService({ ...newService, short: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Full In-depth Overview</label>
-                <textarea placeholder="Write a detailed explanation of what this clinical service involves, clinical procedures, technology used..." value={newService.overview} onChange={(e) => setNewService({ ...newService, overview: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-24 resize-none focus:ring-2 focus:ring-primary/20" />
+                <h2 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" /> Clinic Services Catalog
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Manage the treatments, clinical processes, and FAQs displayed to patients.</p>
               </div>
             </div>
 
-            {/* Diagnostic Strings input fields */}
-            <div className="border-t pt-4 space-y-4">
-              <h3 className="text-sm font-extrabold tracking-tight">Clinical Diagnostic Details</h3>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Symptoms (comma separated)</label>
-                  <input type="text" placeholder="Whiteheads, papules, oily skin" value={newService.symptomsStr} onChange={(e) => setNewService({ ...newService, symptomsStr: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Common Causes (comma separated)</label>
-                  <input type="text" placeholder="Hormonal fluctuations, excess sebum" value={newService.causesStr} onChange={(e) => setNewService({ ...newService, causesStr: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Benefits (comma separated)</label>
-                  <input type="text" placeholder="Clearer skin, controlled oil" value={newService.benefitsStr} onChange={(e) => setNewService({ ...newService, benefitsStr: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-              </div>
-            </div>
-
-            {/* Process steps addition */}
-            <div className="border-t pt-4 space-y-4">
-              <h3 className="text-sm font-extrabold tracking-tight">Treatment Steps Process ({newService.process.length})</h3>
-              {newService.process.length > 0 && (
-                <div className="space-y-2 border rounded-xl p-3 bg-secondary/5 max-h-40 overflow-y-auto">
-                  {newService.process.map((step, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-xs border-b pb-1.5 last:border-0 last:pb-0">
-                      <div>
-                        <span className="font-extrabold text-primary">{idx + 1}. {step.step}</span>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{step.detail}</p>
-                      </div>
-                      <button type="button" onClick={() => setNewService({ ...newService, process: newService.process.filter((_, i) => i !== idx) })} className="text-destructive hover:text-destructive/80 font-bold">Remove</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="grid gap-3 sm:grid-cols-2 items-end border p-4 rounded-2xl bg-secondary/5">
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Step Name</label>
-                  <input type="text" placeholder="e.g. Skin Analysis" value={newStep.step} onChange={(e) => setNewStep({ ...newStep, step: e.target.value })} className="w-full rounded-xl border px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Step Detail Description</label>
-                  <input type="text" placeholder="Detailed grading and mapping triggers." value={newStep.detail} onChange={(e) => setNewStep({ ...newStep, detail: e.target.value })} className="w-full rounded-xl border px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div className="sm:col-span-2 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (!newStep.step) return toast.error("Step name is required!");
-                      setNewService({ ...newService, process: [...newService.process, newStep] });
-                      setNewStep({ step: "", detail: "" });
-                    }}
-                    className="h-8 text-xs rounded-xl font-bold shadow-sm"
-                  >
-                    Add Process Step
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* FAQs addition */}
-            <div className="border-t pt-4 space-y-4">
-              <h3 className="text-sm font-extrabold tracking-tight">Service FAQs ({newService.faqs.length})</h3>
-              {newService.faqs.length > 0 && (
-                <div className="space-y-2 border rounded-xl p-3 bg-secondary/5 max-h-40 overflow-y-auto">
-                  {newService.faqs.map((faq, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-xs border-b pb-1.5 last:border-0 last:pb-0">
-                      <div>
-                        <span className="font-extrabold text-foreground">Q: {faq.q}</span>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">A: {faq.a}</p>
-                      </div>
-                      <button type="button" onClick={() => setNewService({ ...newService, faqs: newService.faqs.filter((_, i) => i !== idx) })} className="text-destructive hover:text-destructive/80 font-bold">Remove</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="grid gap-3 sm:grid-cols-2 items-end border p-4 rounded-2xl bg-secondary/5">
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Question</label>
-                  <input type="text" placeholder="How long does it take?" value={newFaqItem.q} onChange={(e) => setNewFaqItem({ ...newFaqItem, q: e.target.value })} className="w-full rounded-xl border px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Answer Explanation</label>
-                  <input type="text" placeholder="Most patients see improvement in 6 weeks." value={newFaqItem.a} onChange={(e) => setNewFaqItem({ ...newFaqItem, a: e.target.value })} className="w-full rounded-xl border px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div className="sm:col-span-2 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (!newFaqItem.q || !newFaqItem.a) return toast.error("Question and answer are both required!");
-                      setNewService({ ...newService, faqs: [...newService.faqs, newFaqItem] });
-                      setNewFaqItem({ q: "", a: "" });
-                    }}
-                    className="h-8 text-xs rounded-xl font-bold shadow-sm"
-                  >
-                    Add Service FAQ
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <Button onClick={handleAddService} disabled={saving} className="rounded-xl font-bold shadow-md"><Plus className="mr-1.5 h-4 w-4" /> Add Treatment</Button>
-          </div>
-
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h2 className="text-base font-extrabold tracking-tight mb-4">Seeded Treatments Catalog</h2>
-            <div className="divide-y">
-              {data.map((s) => (
-                <div key={s.slug || s.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <div className="font-bold text-sm text-foreground">{s.title}</div>
-                    <div className="text-xs text-muted-foreground font-semibold">/services/{s.slug || s.id}</div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button onClick={() => setEditingItem(s)} variant="ghost" size="icon" className="rounded-full text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
-                    <Button onClick={() => handleDeleteItem("services", s.slug || s.id)} variant="ghost" size="icon" className="rounded-full text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-                </div>
+            {/* Navigation Tabs */}
+            <div className="flex gap-1.5 bg-secondary/35 p-1.5 rounded-2xl w-fit">
+              {[
+                { id: "manage", label: "📋 Manage Treatments" },
+                { id: "add", label: "➕ Add New Treatment" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setServicesTab(tab.id as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                    servicesTab === tab.id
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-muted-foreground hover:bg-white/40 hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
           </div>
+
+          {servicesTab === "add" ? (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Add Treatment Details</strong>
+                  Create a new clinical service entry. The unique slug identifier acts as the web link address (e.g. <code>hydrafacial-glow</code> maps to <code>/services/hydrafacial-glow</code>).
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Treatment Name</label>
+                  <input type="text" placeholder="Hydrafacial Treatment" value={newService.title} onChange={(e) => setNewService({ ...newService, title: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Unique Slug Identifier</label>
+                  <input type="text" placeholder="hydrafacial-glow" value={newService.slug} onChange={(e) => setNewService({ ...newService, slug: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Service Icon (Visual SVG Representation)</label>
+                  <select value={newService.icon} onChange={(e) => setNewService({ ...newService, icon: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="Sparkles">Sparkles</option>
+                    <option value="Sun">Sun</option>
+                    <option value="Droplet">Droplet</option>
+                    <option value="Scissors">Scissors</option>
+                    <option value="Layers">Layers</option>
+                    <option value="Star">Star</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Reference Image (Optional)</label>
+                  <ImageSelector
+                    label="Pick Service Image"
+                    value={newService.imageUrl || ""}
+                    onChange={(url) => setNewService({ ...newService, imageUrl: url })}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Short Excerpt Summary</label>
+                  <input type="text" placeholder="Instant hydrating facial for dull, pigmented skin." value={newService.short} onChange={(e) => setNewService({ ...newService, short: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Full In-depth Overview</label>
+                  <textarea placeholder="Write a detailed explanation of what this clinical service involves, clinical procedures, technology used..." value={newService.overview} onChange={(e) => setNewService({ ...newService, overview: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-24 resize-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+
+              {/* Diagnostic Strings input fields */}
+              <div className="border-t pt-4 space-y-4">
+                <h3 className="text-sm font-extrabold tracking-tight">Clinical Diagnostic Details</h3>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Symptoms (comma separated)</label>
+                    <input type="text" placeholder="Whiteheads, papules, oily skin" value={newService.symptomsStr} onChange={(e) => setNewService({ ...newService, symptomsStr: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Common Causes (comma separated)</label>
+                    <input type="text" placeholder="Hormonal fluctuations, excess sebum" value={newService.causesStr} onChange={(e) => setNewService({ ...newService, causesStr: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Benefits (comma separated)</label>
+                    <input type="text" placeholder="Clearer skin, controlled oil" value={newService.benefitsStr} onChange={(e) => setNewService({ ...newService, benefitsStr: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Process steps addition */}
+              <div className="border-t pt-4 space-y-4">
+                <h3 className="text-sm font-extrabold tracking-tight">Treatment Steps Process ({newService.process.length})</h3>
+                {newService.process.length > 0 && (
+                  <div className="space-y-2 border rounded-xl p-3 bg-secondary/5 max-h-40 overflow-y-auto">
+                    {newService.process.map((step, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-xs border-b pb-1.5 last:border-0 last:pb-0">
+                        <div>
+                          <span className="font-extrabold text-primary">{idx + 1}. {step.step}</span>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{step.detail}</p>
+                        </div>
+                        <button type="button" onClick={() => setNewService({ ...newService, process: newService.process.filter((_, i) => i !== idx) })} className="text-destructive hover:text-destructive/80 font-bold">Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2 items-end border p-4 rounded-2xl bg-secondary/5">
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Step Name</label>
+                    <input type="text" placeholder="e.g. Skin Analysis" value={newStep.step} onChange={(e) => setNewStep({ ...newStep, step: e.target.value })} className="w-full rounded-xl border px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Step Detail Description</label>
+                    <input type="text" placeholder="Detailed grading and mapping triggers." value={newStep.detail} onChange={(e) => setNewStep({ ...newStep, detail: e.target.value })} className="w-full rounded-xl border px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div className="sm:col-span-2 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (!newStep.step) return toast.error("Step name is required!");
+                        setNewService({ ...newService, process: [...newService.process, newStep] });
+                        setNewStep({ step: "", detail: "" });
+                      }}
+                      className="h-8 text-xs rounded-xl font-bold shadow-sm"
+                    >
+                      Add Process Step
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* FAQs addition */}
+              <div className="border-t pt-4 space-y-4">
+                <h3 className="text-sm font-extrabold tracking-tight">Service FAQs ({newService.faqs.length})</h3>
+                {newService.faqs.length > 0 && (
+                  <div className="space-y-2 border rounded-xl p-3 bg-secondary/5 max-h-40 overflow-y-auto">
+                    {newService.faqs.map((faq, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-xs border-b pb-1.5 last:border-0 last:pb-0">
+                        <div>
+                          <span className="font-extrabold text-foreground">Q: {faq.q}</span>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">A: {faq.a}</p>
+                        </div>
+                        <button type="button" onClick={() => setNewService({ ...newService, faqs: newService.faqs.filter((_, i) => i !== idx) })} className="text-destructive hover:text-destructive/80 font-bold">Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2 items-end border p-4 rounded-2xl bg-secondary/5">
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Question</label>
+                    <input type="text" placeholder="How long does it take?" value={newFaqItem.q} onChange={(e) => setNewFaqItem({ ...newFaqItem, q: e.target.value })} className="w-full rounded-xl border px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Answer Explanation</label>
+                    <input type="text" placeholder="Most patients see improvement in 6 weeks." value={newFaqItem.a} onChange={(e) => setNewFaqItem({ ...newFaqItem, a: e.target.value })} className="w-full rounded-xl border px-3 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div className="sm:col-span-2 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (!newFaqItem.q || !newFaqItem.a) return toast.error("Question and answer are both required!");
+                        setNewService({ ...newService, faqs: [...newService.faqs, newFaqItem] });
+                        setNewFaqItem({ q: "", a: "" });
+                      }}
+                      className="h-8 text-xs rounded-xl font-bold shadow-sm"
+                    >
+                      Add Service FAQ
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={handleAddService} disabled={saving} className="rounded-xl font-bold shadow-md bg-primary"><Plus className="mr-1.5 h-4 w-4" /> Add Treatment</Button>
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm animate-fade-down space-y-4">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Manage Catalog Info</strong>
+                  Below are all treatments currently listed in the database. You can edit their text copy, images, diagnostic questions, or remove them completely from the live app.
+                </div>
+              </div>
+
+              <div className="divide-y">
+                {data.map((s) => (
+                  <div key={s.slug || s.id} className="flex items-center justify-between py-3.5 hover:bg-secondary/5 px-2 rounded-xl transition-all">
+                    <div>
+                      <div className="font-bold text-sm text-foreground">{s.title}</div>
+                      <div className="text-xs text-muted-foreground font-semibold">/services/{s.slug || s.id}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Button onClick={() => setEditingItem(s)} variant="ghost" size="icon" className="rounded-full h-9 w-9 text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
+                      <Button onClick={() => handleDeleteItem("services", s.slug || s.id)} variant="ghost" size="icon" className="rounded-full h-9 w-9 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* 3. BLOG POST PANEL (Task 4) */}
       {section === "blogs" && (
-        <div className="space-y-6">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-extrabold tracking-tight">Publish Clinical Blog Article</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Card with Navigation Tabs */}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Article Title</label>
-                <input type="text" placeholder="Dermatologist Skincare Guidelines" value={newBlog.title} onChange={(e) => setNewBlog({ ...newBlog, title: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Article Slug</label>
-                <input type="text" placeholder="dermatologist-skincare-guidelines" value={newBlog.slug} onChange={(e) => setNewBlog({ ...newBlog, slug: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Category</label>
-                <input type="text" placeholder="Acne / Hair / Skincare" value={newBlog.category} onChange={(e) => setNewBlog({ ...newBlog, category: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Reading time (minutes)</label>
-                <input type="number" placeholder="5" value={newBlog.readMins} onChange={(e) => setNewBlog({ ...newBlog, readMins: parseInt(e.target.value) || 5 })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              
-              <div className="sm:col-span-2">
-                <ImageSelector
-                  label="Blog cover image banner"
-                  value={newBlog.cover || ""}
-                  onChange={(url) => setNewBlog({ ...newBlog, cover: url })}
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Excerpt Summary</label>
-                <input type="text" placeholder="Science-backed dermatological tips to support your daily routines." value={newBlog.excerpt} onChange={(e) => setNewBlog({ ...newBlog, excerpt: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Blog Body Content (separated by empty newlines for new paragraphs)</label>
-                <textarea placeholder="Write the main paragraphs here. Hit enter twice between sections..." value={newBlog.bodyStr} onChange={(e) => setNewBlog({ ...newBlog, bodyStr: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-40 resize-none focus:ring-2 focus:ring-primary/20" />
+                <h2 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" /> Blog Post Panel
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Publish and manage education resources and clinical skin and hair advice articles.</p>
               </div>
             </div>
-            <Button onClick={handleAddBlog} disabled={saving} className="rounded-xl font-bold shadow-md"><Plus className="mr-1.5 h-4 w-4" /> Publish Blog</Button>
-          </div>
 
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h2 className="text-base font-extrabold tracking-tight mb-4">Published Articles</h2>
-            <div className="divide-y">
-              {data.map((b) => (
-                <div key={b.slug || b.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <div className="font-bold text-sm text-foreground">{b.title}</div>
-                    <div className="text-xs text-muted-foreground font-semibold">/blog/{b.slug || b.id} · {b.category}</div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button onClick={() => setEditingItem(b)} variant="ghost" size="icon" className="rounded-full text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
-                    <Button onClick={() => handleDeleteItem("blogs", b.slug || b.id)} variant="ghost" size="icon" className="rounded-full text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-                </div>
+            {/* Navigation Tabs */}
+            <div className="flex gap-1.5 bg-secondary/35 p-1.5 rounded-2xl w-fit">
+              {[
+                { id: "manage", label: "📋 Published Articles" },
+                { id: "add", label: "✍️ Publish Article" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setBlogsTab(tab.id as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                    blogsTab === tab.id
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-muted-foreground hover:bg-white/40 hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
           </div>
+
+          {blogsTab === "add" ? (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Publish New Article</strong>
+                  Write and publish science-backed dermatological guidelines. Note that the unique slug maps to the link address on the website (e.g. <code>/blog/your-slug</code>).
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Article Title</label>
+                  <input type="text" placeholder="Dermatologist Skincare Guidelines" value={newBlog.title} onChange={(e) => setNewBlog({ ...newBlog, title: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Article Slug</label>
+                  <input type="text" placeholder="dermatologist-skincare-guidelines" value={newBlog.slug} onChange={(e) => setNewBlog({ ...newBlog, slug: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Category</label>
+                  <input type="text" placeholder="Acne / Hair / Skincare" value={newBlog.category} onChange={(e) => setNewBlog({ ...newBlog, category: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Reading time (minutes)</label>
+                  <input type="number" placeholder="5" value={newBlog.readMins} onChange={(e) => setNewBlog({ ...newBlog, readMins: parseInt(e.target.value) || 5 })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                
+                <div className="sm:col-span-2">
+                  <ImageSelector
+                    label="Blog cover image banner"
+                    value={newBlog.cover || ""}
+                    onChange={(url) => setNewBlog({ ...newBlog, cover: url })}
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Excerpt Summary</label>
+                  <input type="text" placeholder="Science-backed dermatological tips to support your daily routines." value={newBlog.excerpt} onChange={(e) => setNewBlog({ ...newBlog, excerpt: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Blog Body Content (separated by empty newlines for new paragraphs)</label>
+                  <textarea placeholder="Write the main paragraphs here. Hit enter twice between sections..." value={newBlog.bodyStr} onChange={(e) => setNewBlog({ ...newBlog, bodyStr: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-40 resize-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+              <Button onClick={handleAddBlog} disabled={saving} className="rounded-xl font-bold shadow-md bg-primary"><Plus className="mr-1.5 h-4 w-4" /> Publish Blog</Button>
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm animate-fade-down space-y-4">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Manage Blog Articles</strong>
+                  Modify details or remove published blog articles from the live website feeds.
+                </div>
+              </div>
+
+              <div className="divide-y">
+                {data.map((b) => (
+                  <div key={b.slug || b.id} className="flex items-center justify-between py-3.5 hover:bg-secondary/5 px-2 rounded-xl transition-all">
+                    <div>
+                      <div className="font-bold text-sm text-foreground">{b.title}</div>
+                      <div className="text-xs text-muted-foreground font-semibold">/blog/{b.slug || b.id} · {b.category}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Button onClick={() => setEditingItem(b)} variant="ghost" size="icon" className="rounded-full h-9 w-9 text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
+                      <Button onClick={() => handleDeleteItem("blogs", b.slug || b.id)} variant="ghost" size="icon" className="rounded-full h-9 w-9 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* 4. GOOGLE REVIEWS TESTIMONIALS */}
       {section === "testimonials" && (
-        <div className="space-y-6">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-extrabold tracking-tight">Add Google Review</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Card with Navigation Tabs */}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Patient Name</label>
-                <input type="text" placeholder="Vikram Malhotra" value={newTestimonial.name} onChange={(e) => setNewTestimonial({ ...newTestimonial, name: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinical Concern</label>
-                <input type="text" placeholder="Acne / PRP" value={newTestimonial.concern} onChange={(e) => setNewTestimonial({ ...newTestimonial, concern: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Review Text</label>
-                <textarea placeholder="Amazing experience, highly satisfying..." value={newTestimonial.text} onChange={(e) => setNewTestimonial({ ...newTestimonial, text: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-20 resize-none focus:ring-2 focus:ring-primary/20" />
+                <h2 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" /> Google Reviews Manager
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Showcase and manage patient testimonials and Google reviews on the homepage.</p>
               </div>
             </div>
-            <Button onClick={handleAddTestimonial} disabled={saving} className="rounded-xl font-bold shadow-md"><Plus className="mr-1.5 h-4 w-4" /> Add Testimonial</Button>
-          </div>
 
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h2 className="text-base font-extrabold tracking-tight mb-4">Patient Reviews</h2>
-            <div className="divide-y">
-              {data.map((t, idx) => (
-                <div key={t.id || idx} className="flex items-center justify-between py-3">
-                  <div className="mr-4">
-                    <div className="font-bold text-sm text-foreground">{t.name} ( concern: {t.concern} )</div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">"{t.text}"</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button onClick={() => setEditingItem(t)} variant="ghost" size="icon" className="rounded-full text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
-                    <Button onClick={() => handleDeleteItem("testimonials", t.id)} variant="ghost" size="icon" className="rounded-full text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-                </div>
+            {/* Navigation Tabs */}
+            <div className="flex gap-1.5 bg-secondary/35 p-1.5 rounded-2xl w-fit">
+              {[
+                { id: "manage", label: "📋 Patient Reviews" },
+                { id: "add", label: "➕ Add Google Review" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setTestimonialsTab(tab.id as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                    testimonialsTab === tab.id
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-muted-foreground hover:bg-white/40 hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
           </div>
+
+          {testimonialsTab === "add" ? (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Add New Review</strong>
+                  Manually upload a 5-star Google review or patient feedback card. Specifying the clinical concern helps categorize the review.
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Patient Name</label>
+                  <input type="text" placeholder="Vikram Malhotra" value={newTestimonial.name} onChange={(e) => setNewTestimonial({ ...newTestimonial, name: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinical Concern</label>
+                  <input type="text" placeholder="Acne / PRP" value={newTestimonial.concern} onChange={(e) => setNewTestimonial({ ...newTestimonial, concern: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Review Text</label>
+                  <textarea placeholder="Amazing experience, highly satisfying..." value={newTestimonial.text} onChange={(e) => setNewTestimonial({ ...newTestimonial, text: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-20 resize-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+              <Button onClick={handleAddTestimonial} disabled={saving} className="rounded-xl font-bold shadow-md bg-primary"><Plus className="mr-1.5 h-4 w-4" /> Add Testimonial</Button>
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm animate-fade-down space-y-4">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Review Directory</strong>
+                  List of patient testimonials showing on the home slider. You can modify their texts or remove outdated feedback entries.
+                </div>
+              </div>
+
+              <div className="divide-y">
+                {data.map((t, idx) => (
+                  <div key={t.id || idx} className="flex items-center justify-between py-3.5 hover:bg-secondary/5 px-2 rounded-xl transition-all">
+                    <div className="mr-4">
+                      <div className="font-bold text-sm text-foreground">{t.name} <span className="text-xs text-primary font-semibold ml-1.5">({t.concern})</span></div>
+                      <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">"{t.text}"</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button onClick={() => setEditingItem(t)} variant="ghost" size="icon" className="rounded-full h-9 w-9 text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
+                      <Button onClick={() => handleDeleteItem("testimonials", t.id)} variant="ghost" size="icon" className="rounded-full h-9 w-9 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1173,192 +1875,253 @@ function AdminSection() {
 
       {/* 6. GALLERY IMAGES PANEL */}
       {section === "gallery" && (
-        <div className="space-y-6">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-extrabold tracking-tight">Add Gallery Image</h2>
-            
-            {/* Type selector */}
-            <div className="flex gap-2 p-1 border rounded-2xl bg-secondary/10 w-fit">
-              <button
-                type="button"
-                onClick={() => setGalleryAssetType("standard")}
-                className={cn(
-                  "px-4 py-1.5 rounded-xl text-xs font-bold transition-all",
-                  galleryAssetType === "standard" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"
-                )}
-              >
-                Standard Image
-              </button>
-              <button
-                type="button"
-                onClick={() => setGalleryAssetType("beforeAfter")}
-                className={cn(
-                  "px-4 py-1.5 rounded-xl text-xs font-bold transition-all",
-                  galleryAssetType === "beforeAfter" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"
-                )}
-              >
-                Before / After Results
-              </button>
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Card with Navigation Tabs */}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+              <div>
+                <h2 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5 text-primary" /> Gallery Image Assets
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Upload and organize clinic showcase, doctor profile, or patient result images.</p>
+              </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 pt-2">
-              {galleryAssetType === "standard" ? (
-                <>
-                  <div>
-                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Gallery Image Asset</label>
+            {/* Navigation Tabs */}
+            <div className="flex gap-1.5 bg-secondary/35 p-1.5 rounded-2xl w-fit">
+              {[
+                { id: "manage", label: "📋 Gallery Image Catalog" },
+                { id: "add", label: "➕ Add Gallery Image" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setGalleryTab(tab.id as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                    galleryTab === tab.id
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-muted-foreground hover:bg-white/40 hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {galleryTab === "add" ? (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Add Gallery Image</strong>
+                  Upload a clinic image asset or before & after patient result cards. Before & After images are styled in a side-by-side layout on the website.
+                </div>
+              </div>
+
+              {/* Type selector */}
+              <div className="flex gap-2 p-1 border rounded-2xl bg-secondary/10 w-fit">
+                <button
+                  type="button"
+                  onClick={() => setGalleryAssetType("standard")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-xl text-xs font-bold transition-all",
+                    galleryAssetType === "standard" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"
+                  )}
+                >
+                  Standard Image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGalleryAssetType("beforeAfter")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-xl text-xs font-bold transition-all",
+                    galleryAssetType === "beforeAfter" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"
+                  )}
+                >
+                  Before / After Results
+                </button>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 pt-2">
+                {galleryAssetType === "standard" ? (
+                  <>
+                    <div>
+                      <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Gallery Image Asset</label>
+                      <ImageSelector
+                        label="Pick Gallery Image"
+                        value={newGallery.src || ""}
+                        onChange={(url) => setNewGallery({ ...newGallery, src: url })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Gallery Section Category</label>
+                      <select value={newGallery.category} onChange={(e) => setNewGallery({ ...newGallery, category: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20">
+                        <option value="Doctor">Doctor Images</option>
+                        <option value="Clinic">Clinic Images</option>
+                        <option value="Treatment">Treatment Room</option>
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2 animate-fade-down">
                     <ImageSelector
-                      label="Pick Gallery Image"
-                      value={newGallery.src || ""}
-                      onChange={(url) => setNewGallery({ ...newGallery, src: url })}
+                      label="Before Treatment Image"
+                      value={newGallery.beforeSrc || ""}
+                      onChange={(url) => setNewGallery({ ...newGallery, beforeSrc: url })}
+                    />
+                    <ImageSelector
+                      label="After Treatment Image"
+                      value={newGallery.afterSrc || ""}
+                      onChange={(url) => setNewGallery({ ...newGallery, afterSrc: url })}
                     />
                   </div>
+                )}
+                <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Gallery Section Category</label>
-                    <select value={newGallery.category} onChange={(e) => setNewGallery({ ...newGallery, category: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20">
-                      <option value="Doctor">Doctor Images</option>
-                      <option value="Clinic">Clinic Images</option>
-                      <option value="Treatment">Treatment Room</option>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Caption / Treatment Name</label>
+                    <input type="text" placeholder="Acne Therapy Results" value={newGallery.caption} onChange={(e) => setNewGallery({ ...newGallery, caption: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Related Service Link (Optional)</label>
+                    <select
+                      value={newGallery.serviceSlug || ""}
+                      onChange={(e) => setNewGallery({ ...newGallery, serviceSlug: e.target.value })}
+                      className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="">-- No Related Service --</option>
+                      {galleryServicesList.map((s: any) => (
+                        <option key={s.slug} value={s.slug}>{s.title}</option>
+                      ))}
                     </select>
                   </div>
-                </>
-              ) : (
-                <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2 animate-fade-down">
-                  <ImageSelector
-                    label="Before Treatment Image"
-                    value={newGallery.beforeSrc || ""}
-                    onChange={(url) => setNewGallery({ ...newGallery, beforeSrc: url })}
-                  />
-                  <ImageSelector
-                    label="After Treatment Image"
-                    value={newGallery.afterSrc || ""}
-                    onChange={(url) => setNewGallery({ ...newGallery, afterSrc: url })}
-                  />
-                </div>
-              )}
-              <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Caption / Treatment Name</label>
-                  <input type="text" placeholder="Acne Therapy Results" value={newGallery.caption} onChange={(e) => setNewGallery({ ...newGallery, caption: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Related Service Link (Optional)</label>
-                  <select
-                    value={newGallery.serviceSlug || ""}
-                    onChange={(e) => setNewGallery({ ...newGallery, serviceSlug: e.target.value })}
-                    className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="">-- No Related Service --</option>
-                    {galleryServicesList.map((s: any) => (
-                      <option key={s.slug} value={s.slug}>{s.title}</option>
-                    ))}
-                  </select>
                 </div>
               </div>
+              <Button onClick={handleAddGallery} disabled={saving} className="rounded-xl font-bold shadow-md bg-primary"><Plus className="mr-1.5 h-4 w-4" /> Add Image Asset</Button>
             </div>
-            <Button onClick={handleAddGallery} disabled={saving} className="rounded-xl font-bold shadow-md"><Plus className="mr-1.5 h-4 w-4" /> Add Image Asset</Button>
-          </div>
-
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h2 className="text-base font-extrabold tracking-tight mb-4">Gallery Image Catalog</h2>
-            
-            {/* Search and Category filter controls */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-5">
-              {/* Category filter tabs */}
-              <div className="flex flex-wrap gap-2 p-1 border rounded-2xl bg-secondary/10 w-fit">
-                {["All", "Doctor", "Clinic", "Treatment", "Before & After"].map((cat) => {
-                  const count = cat === "All"
-                    ? data.length
-                    : data.filter((g) => g.category === cat || (cat === "Treatment" && g.category === "Treatments")).length;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setGalleryCatFilter(cat)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5",
-                        galleryCatFilter === cat ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {cat}
-                      <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full font-bold", galleryCatFilter === cat ? "bg-primary/10 text-primary" : "bg-secondary/60 text-muted-foreground")}>{count}</span>
-                    </button>
-                  );
-                })}
+          ) : (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm animate-fade-down space-y-4">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Gallery Catalog</strong>
+                  Filter and manage standard photos and result cards loaded in your clinic database.
+                </div>
               </div>
 
-              {/* Search bar */}
-              <div className="relative w-full sm:w-64">
-                <input
-                  type="text"
-                  placeholder="Search catalog by caption..."
-                  value={adminGallerySearch}
-                  onChange={(e) => setAdminGallerySearch(e.target.value)}
-                  className="w-full pl-3 pr-8 py-1.5 text-xs bg-white border border-primary/15 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
-                />
-                {adminGallerySearch && (
-                  <button onClick={() => setAdminGallerySearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold">✕</button>
-                )}
-              </div>
-            </div>
+              {/* Search and Category filter controls */}
+              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-5">
+                {/* Category filter tabs */}
+                <div className="flex flex-wrap gap-2 p-1 border rounded-2xl bg-secondary/10 w-fit">
+                  {["All", "Doctor", "Clinic", "Treatment", "Before & After"].map((cat) => {
+                    const count = cat === "All"
+                      ? data.length
+                      : data.filter((g) => g.category === cat || (cat === "Treatment" && g.category === "Treatments")).length;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setGalleryCatFilter(cat)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5",
+                          galleryCatFilter === cat ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {cat}
+                        <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full font-bold", galleryCatFilter === cat ? "bg-primary/10 text-primary" : "bg-secondary/60 text-muted-foreground")}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {data
-                .filter((g) => {
-                  const cat = g.category;
-                  const matchesCat =
-                    galleryCatFilter === "All" ||
-                    cat === galleryCatFilter ||
-                    (galleryCatFilter === "Treatment" && cat === "Treatments");
-                  const matchesSearch =
-                    !adminGallerySearch.trim() ||
-                    (g.caption || "").toLowerCase().includes(adminGallerySearch.toLowerCase().trim());
-                  return matchesCat && matchesSearch;
-                })
-                .map((g, idx) => {
-                  const linked = galleryServicesList.find(s => s.slug === g.serviceSlug);
-                  return (
-                    <div key={g.id || idx} className="rounded-xl border p-3 bg-secondary/10 flex flex-col justify-between space-y-2">
-                      <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                        {g.beforeSrc && g.afterSrc ? (
-                          <div className="grid grid-cols-2 h-full w-full relative">
-                            <img src={g.beforeSrc} alt="before" className="h-full w-full object-cover" />
-                            <img src={g.afterSrc} alt="after" className="h-full w-full object-cover border-l border-white" />
-                            <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">Before/After</span>
-                          </div>
-                        ) : (
-                          <img src={g.src} alt={g.caption} className="h-full w-full object-cover" />
-                        )}
-                        <span className="absolute top-2 left-2 bg-secondary/80 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full">{g.category}</span>
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="text-xs font-extrabold text-foreground truncate">{g.caption}</div>
-                        {linked && (
-                          <div className="text-[10px] text-primary font-bold">Linked: {linked.title}</div>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between pt-1 border-t border-border/20">
-                        <span className="text-[9px] font-bold text-muted-foreground">{g.category}</span>
-                        <div className="flex items-center">
-                          <Button onClick={() => setEditingItem(g)} variant="ghost" size="icon" className="rounded-full h-7 w-7 text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
-                          {g.id && (
-                            <Button onClick={() => handleDeleteItem("gallery", g.id)} variant="ghost" size="icon" className="rounded-full h-7 w-7 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                {/* Search bar */}
+                <div className="relative w-full sm:w-64">
+                  <input
+                    type="text"
+                    placeholder="Search catalog by caption..."
+                    value={adminGallerySearch}
+                    onChange={(e) => setAdminGallerySearch(e.target.value)}
+                    className="w-full pl-3 pr-8 py-1.5 text-xs bg-white border border-primary/15 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
+                  />
+                  {adminGallerySearch && (
+                    <button onClick={() => setAdminGallerySearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold">✕</button>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {data
+                  .filter((g) => {
+                    const cat = g.category;
+                    const matchesCat =
+                      galleryCatFilter === "All" ||
+                      cat === galleryCatFilter ||
+                      (galleryCatFilter === "Treatment" && cat === "Treatments");
+                    const matchesSearch =
+                      !adminGallerySearch.trim() ||
+                      (g.caption || "").toLowerCase().includes(adminGallerySearch.toLowerCase().trim());
+                    return matchesCat && matchesSearch;
+                  })
+                  .map((g, idx) => {
+                    const linked = galleryServicesList.find(s => s.slug === g.serviceSlug);
+                    return (
+                      <div key={g.id || idx} className="rounded-xl border p-3 bg-secondary/10 flex flex-col justify-between space-y-2">
+                        <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                          {g.beforeSrc && g.afterSrc ? (
+                            <div className="grid grid-cols-2 h-full w-full relative">
+                              <img src={g.beforeSrc} alt="before" className="h-full w-full object-cover" />
+                              <img src={g.afterSrc} alt="after" className="h-full w-full object-cover border-l border-white" />
+                              <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">Before/After</span>
+                            </div>
+                          ) : (
+                            <img src={g.src} alt={g.caption} className="h-full w-full object-cover" />
+                          )}
+                          <span className="absolute top-2 left-2 bg-secondary/80 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full">{g.category}</span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-extrabold text-foreground truncate">{g.caption}</div>
+                          {linked && (
+                            <div className="text-[10px] text-primary font-bold">Linked: {linked.title}</div>
                           )}
                         </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-border/20">
+                          <span className="text-[9px] font-bold text-muted-foreground">{g.category}</span>
+                          <div className="flex items-center">
+                            <Button onClick={() => setEditingItem(g)} variant="ghost" size="icon" className="rounded-full h-7 w-7 text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
+                            {g.id && (
+                              <Button onClick={() => handleDeleteItem("gallery", g.id)} variant="ghost" size="icon" className="rounded-full h-7 w-7 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* 7. SEO METADATA PANEL */}
       {section === "seo" && seoSettings && (
-        <div className="space-y-6">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-extrabold tracking-tight">Search Engine Optimization Settings</h2>
-            
+        <div className="space-y-6 animate-fade-in">
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6">
+            <div className="border-b pb-4">
+              <h2 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" /> Search Engine Optimization
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Calibrate how your clinic webpage is previewed on search engine result pages like Google.</p>
+            </div>
+
+            <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+              <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div className="text-xs leading-normal">
+                <strong className="font-bold text-primary block mb-0.5">SEO Meta Calibration</strong>
+                Title tags should be under 60 characters, and descriptions under 160 characters. This determines Google search snippet formatting.
+              </div>
+            </div>
+
             <div className="grid gap-4">
               <div>
                 <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Google Browser Title Tag</label>
@@ -1374,7 +2137,7 @@ function AdminSection() {
               </div>
             </div>
 
-            <Button onClick={handleSaveSEO} disabled={saving} className="rounded-xl font-bold shadow-md mt-2">
+            <Button onClick={handleSaveSEO} disabled={saving} className="rounded-xl font-bold shadow-md bg-primary">
               {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
               Save SEO Target Meta
             </Button>
@@ -1402,52 +2165,102 @@ function AdminSection() {
 
       {/* 8. FAQ PANEL */}
       {section === "faqs" && (
-        <div className="space-y-6">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-extrabold tracking-tight">Add FAQ Question</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Card with Navigation Tabs */}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Category</label>
-                <select value={newFaq.category} onChange={(e) => setNewFaq({ ...newFaq, category: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20">
-                  <option value="General">General Inquiries</option>
-                  <option value="Safety">Safety & Skin</option>
-                  <option value="Fees">Consult Fee & Price</option>
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">FAQ Question Text</label>
-                <input type="text" placeholder="Do I need a prior appointment to consult Dr. Jain?" value={newFaq.q} onChange={(e) => setNewFaq({ ...newFaq, q: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Detailed Explanation Answer</label>
-                <textarea placeholder="Yes, appointments help us evaluate every skin concern carefully without rush..." value={newFaq.a} onChange={(e) => setNewFaq({ ...newFaq, a: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-20 resize-none focus:ring-2 focus:ring-primary/20" />
+                <h2 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5 text-primary" /> FAQ Registry
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Manage the frequently asked questions displayed in the accordion on the homepage.</p>
               </div>
             </div>
-            <Button onClick={handleAddFAQ} disabled={saving} className="rounded-xl font-bold shadow-md"><Plus className="mr-1.5 h-4 w-4" /> Add FAQ</Button>
-          </div>
 
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h2 className="text-base font-extrabold tracking-tight mb-4">FAQ Registry</h2>
-            <div className="divide-y space-y-4">
-              {data.map((faq, idx) => (
-                <div key={faq.id || idx} className="flex justify-between items-start py-4">
-                  <div className="mr-6 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-secondary text-primary font-bold text-[9px] px-2 py-0.5 rounded-full">{faq.category}</span>
-                      <span className="font-extrabold text-sm text-foreground">Q: {faq.q}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed pl-2 border-l-2 border-primary/25">A: {faq.a}</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button onClick={() => setEditingItem(faq)} variant="ghost" size="icon" className="rounded-full text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
-                    {faq.id && (
-                      <Button onClick={() => handleDeleteItem("faq", faq.id)} variant="ghost" size="icon" className="rounded-full text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-                    )}
-                  </div>
-                </div>
+            {/* Navigation Tabs */}
+            <div className="flex gap-1.5 bg-secondary/35 p-1.5 rounded-2xl w-fit">
+              {[
+                { id: "manage", label: "📋 FAQ Registry" },
+                { id: "add", label: "➕ Add FAQ Question" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setFaqsTab(tab.id as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                    faqsTab === tab.id
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-muted-foreground hover:bg-white/40 hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
           </div>
+
+          {faqsTab === "add" ? (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Add New FAQ</strong>
+                  Compose a clinical FAQ. Grouping by category helps organize how questions are shown to patients.
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Category</label>
+                  <select value={newFaq.category} onChange={(e) => setNewFaq({ ...newFaq, category: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="General">General Inquiries</option>
+                    <option value="Safety">Safety & Skin</option>
+                    <option value="Fees">Consult Fee & Price</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">FAQ Question Text</label>
+                  <input type="text" placeholder="Do I need a prior appointment to consult Dr. Jain?" value={newFaq.q} onChange={(e) => setNewFaq({ ...newFaq, q: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Detailed Explanation Answer</label>
+                  <textarea placeholder="Yes, appointments help us evaluate every skin concern carefully without rush..." value={newFaq.a} onChange={(e) => setNewFaq({ ...newFaq, a: e.target.value })} className="w-full rounded-xl border px-3 py-2 text-sm outline-none h-20 resize-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+              <Button onClick={handleAddFAQ} disabled={saving} className="rounded-xl font-bold shadow-md bg-primary"><Plus className="mr-1.5 h-4 w-4" /> Add FAQ</Button>
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm animate-fade-down space-y-4">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">FAQ Registry</strong>
+                  Below are all the general questions in the database. You can edit their answers or delete them entirely.
+                </div>
+              </div>
+
+              <div className="divide-y space-y-4">
+                {data.map((faq, idx) => (
+                  <div key={faq.id || idx} className="flex justify-between items-start py-4 hover:bg-secondary/5 px-2 rounded-xl transition-all">
+                    <div className="mr-6 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-secondary text-primary font-bold text-[9px] px-2 py-0.5 rounded-full">{faq.category}</span>
+                        <span className="font-extrabold text-sm text-foreground">Q: {faq.q}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed pl-2 border-l-2 border-primary/25">A: {faq.a}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button onClick={() => setEditingItem(faq)} variant="ghost" size="icon" className="rounded-full h-9 w-9 text-primary hover:bg-secondary"><Edit3 className="h-4 w-4" /></Button>
+                      {faq.id && (
+                        <Button onClick={() => handleDeleteItem("faq", faq.id)} variant="ghost" size="icon" className="rounded-full h-9 w-9 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

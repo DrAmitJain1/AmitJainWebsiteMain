@@ -160,6 +160,17 @@ function AdminLayout({ handleLogout }: { handleLogout: () => void }) {
   const loc = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <div className="min-h-screen bg-soft-band/40 flex flex-col">
       {/* 1. MOBILE HEADER BAR (Visible only under lg responsive breakpoint) */}

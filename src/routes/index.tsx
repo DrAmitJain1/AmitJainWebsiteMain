@@ -27,7 +27,9 @@ import {
   getTestimonials,
   getFAQs,
   getGallery,
-  createAppointment
+  createAppointment,
+  getSpecialtiesData,
+  getWhyChooseUsData
 } from "@/lib/firebaseServices";
 import { toast } from "sonner";
 
@@ -84,25 +86,35 @@ function HomePage() {
 
 function Hero() {
   const [clinic, setClinic] = useState(fallbackClinic);
-  const [hero, setHero] = useState({
-    title: "Beautiful, healthy skin starts with expert clinical care",
+  const [hero, setHero] = useState<any>({
+    badgeText: "Trusted Dermatology · Katraj, Pune",
+    title: "Dr Amit Jain's Skin, Hair and Laser Clinic",
+    titleCursive: "Skin & Hair",
+    titleSuffix: "Care",
     subtitle: "Advanced dermatology, cosmetology, and laser solutions customized for Indian skin.",
     imageUrl: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=1200&q=70",
     ctaText: "Book Appointment",
     rating: 4.8,
     reviewsCount: 140,
+    happyPatientsText: "15,000+ Happy Patients",
+    doctorCardHighlight: "100% Evidence-Based Protocols",
   });
 
   useEffect(() => {
     getClinicSettings().then(setClinic);
-    getHeroData().then((h) => {
+    getHeroData().then((h: any) => {
       setHero({
-        title: h.title,
-        subtitle: h.subtitle,
+        badgeText: h.badgeText || "Trusted Dermatology · Katraj, Pune",
+        title: h.title || "Dr Amit Jain's Skin, Hair and Laser Clinic",
+        titleCursive: h.titleCursive || "Skin & Hair",
+        titleSuffix: h.titleSuffix || "Care",
+        subtitle: h.subtitle || "Advanced dermatology, cosmetology, and laser solutions customized for Indian skin.",
         imageUrl: h.imageUrl,
         ctaText: h.ctaText,
         rating: h.rating,
         reviewsCount: h.reviewsCount,
+        happyPatientsText: h.happyPatientsText || "15,000+ Happy Patients",
+        doctorCardHighlight: h.doctorCardHighlight || "100% Evidence-Based Protocols",
       });
     });
   }, []);
@@ -117,13 +129,13 @@ function Hero() {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 pt-0 pb-8 md:grid-cols-2 md:pt-0 md:pb-14 items-center">
         <div className="flex flex-col justify-center animate-fade-up">
           <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/20 bg-secondary px-3.5 py-1 text-xs font-bold text-primary shadow-sm backdrop-blur-sm">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Trusted Dermatology · Katraj, Pune
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> {hero.badgeText}
           </span>
           <h1 className="mt-4 text-4xl font-extrabold leading-[1.1] tracking-tight text-foreground md:text-[3.25rem] lg:text-[3.75rem]">
-            {hero.title.split("starts with")[0]} <span className="text-cursive text-5xl md:text-[3.75rem] lg:text-[4.25rem] inline-block font-normal">Skin & Hair</span> Care
+            {hero.title} <span className="text-cursive text-5xl md:text-[3.75rem] lg:text-[4.25rem] inline-block font-normal">{hero.titleCursive}</span> {hero.titleSuffix}
           </h1>
           <p className="mt-5 max-w-xl text-sm text-muted-foreground md:text-base leading-relaxed">
-            {hero.subtitle} Led by <strong className="text-foreground">{clinic.doctor}</strong> — {clinic.credentials.split("(")[0].trim()}.
+            {hero.subtitle}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild size="lg" className="rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
@@ -152,7 +164,7 @@ function Hero() {
             <div className="h-4 w-px bg-border hidden sm:block" />
             <div className="flex items-center gap-1.5">
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-primary font-extrabold">✓</span>
-              <span className="font-bold text-foreground">15,000+ Happy Patients</span>
+              <span className="font-bold text-foreground">{hero.happyPatientsText}</span>
             </div>
           </div>
         </div>
@@ -178,7 +190,7 @@ function Hero() {
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between border-t pt-2.5">
-                <span className="text-[11px] font-extrabold text-foreground tracking-tight">100% Evidence-Based Protocols</span>
+                <span className="text-[11px] font-extrabold text-foreground tracking-tight">{hero.doctorCardHighlight}</span>
               </div>
             </div>
           </div>
@@ -279,7 +291,7 @@ function DoctorIntro() {
       "Cosmetology Society of India (CSI)",
       "Association of Hair Restoration Surgeons (AHRS)",
     ],
-    imageUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=1200&q=70",
+    imageUrl: "https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png",
     bio: "Dr. Amit Jain is a highly experienced skin specialist based in Katraj, Pune. Over the last 10+ years, he has successfully delivered clinical and aesthetic solutions for thousands of patients with a patient-first ethos.",
   });
 
@@ -347,58 +359,72 @@ function DoctorIntro() {
 }
 
 function Highlights() {
-  const items = [
-    { 
-      title: "Skin Treatments", 
-      desc: "Comprehensive diagnostic care for acne, pigmentation, eczema, psoriasis, and deep scars.", 
-      icon: Sparkles,
-      tags: ["Acne Care", "Pigmentation", "Peels", "Skin Allergies"]
-    },
-    { 
-      title: "Hair Treatments", 
-      desc: "Advanced trichology services for male/female pattern hair loss, PRP growth factor therapy.", 
-      icon: Award,
-      tags: ["PRP Therapy", "Hair Thinning", "Mesotherapy", "Scalp Care"]
-    },
-    { 
-      title: "Cosmetology", 
-      desc: "Anti-aging injectables, fillers, medical Hydrafacials, carbon facials and skin boosters.", 
-      icon: Star,
-      tags: ["Hydrafacial", "Anti-aging", "Glow Facials", "Skin Boosters"]
-    },
-  ];
+  const [data, setData] = useState<any>({
+    eyebrow: "What we treat",
+    titleMain: "Personalised",
+    titleCursive: "skin & hair",
+    titleSuffix: "specialties",
+    description: "Every clinical solution is calibrated under a single specialist to achieve maximum safety and natural results.",
+    items: [
+      { title: "Skin Treatments", desc: "Comprehensive diagnostic care for acne, pigmentation, eczema, psoriasis, and deep scars.", icon: "Sparkles", tags: ["Acne Care", "Pigmentation", "Peels", "Skin Allergies"] },
+      { title: "Hair Treatments", desc: "Advanced trichology services for male/female pattern hair loss, PRP growth factor therapy.", icon: "Award", tags: ["PRP Therapy", "Hair Thinning", "Mesotherapy", "Scalp Care"] },
+      { title: "Cosmetology", desc: "Anti-aging injectables, fillers, medical Hydrafacials, carbon facials and skin boosters.", icon: "Star", tags: ["Hydrafacial", "Anti-aging", "Glow Facials", "Skin Boosters"] }
+    ]
+  });
+
+  useEffect(() => {
+    getSpecialtiesData().then(setData);
+  }, []);
+
+  const iconMap: Record<string, any> = {
+    Sparkles: Sparkles,
+    Award: Award,
+    Star: Star,
+    ShieldCheck: ShieldCheck,
+    Heart: Heart,
+    CheckCircle2: CheckCircle2,
+    CalendarCheck: CalendarCheck,
+    MessageCircle: MessageCircle,
+    Check: Check,
+    HelpCircle: HelpCircle,
+    User: User,
+  };
+
   return (
     <section className="relative isolate overflow-hidden py-14 md:py-16">
       <div className="absolute inset-0 bg-gradient-to-b from-brand-mint/20 via-brand-frost/25 to-transparent -z-10 bg-dot-pattern opacity-60" />
       <div className="mx-auto max-w-7xl px-4">
         <SectionHeading 
-          eyebrow="What we treat" 
-          title={<>Personalised <span className="text-cursive font-normal text-4xl md:text-[2.75rem]">skin & hair</span> specialties</>} 
-          description="Every clinical solution is calibrated under a single specialist to achieve maximum safety and natural results." 
+          eyebrow={data.eyebrow} 
+          title={<>{data.titleMain} <span className="text-cursive font-normal text-4xl md:text-[2.75rem]">{data.titleCursive}</span> {data.titleSuffix}</>} 
+          description={data.description} 
         />
         <div className="grid gap-6 md:grid-cols-3">
-          {items.map((it) => (
-            <div key={it.title} className="group relative flex flex-col justify-between rounded-2xl border bg-white/70 p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white/95 hover:shadow-xl border-glow-hover">
-              <div>
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-primary transition-transform duration-300 group-hover:scale-105">
-                  <it.icon className="h-6 w-6" />
+          {data.items.map((it: any) => {
+            const IconComponent = iconMap[it.icon] || Sparkles;
+            return (
+              <div key={it.title} className="group relative flex flex-col justify-between rounded-2xl border bg-white/70 p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white/95 hover:shadow-xl border-glow-hover">
+                <div>
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-primary transition-transform duration-300 group-hover:scale-105">
+                    <IconComponent className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-4 text-xl font-extrabold tracking-tight text-foreground transition-colors group-hover:text-primary">{it.title}</h3>
+                  <p className="mt-2 text-xs md:text-sm text-muted-foreground leading-relaxed">{it.desc}</p>
                 </div>
-                <h3 className="mt-4 text-xl font-extrabold tracking-tight text-foreground transition-colors group-hover:text-primary">{it.title}</h3>
-                <p className="mt-2 text-xs md:text-sm text-muted-foreground leading-relaxed">{it.desc}</p>
-              </div>
-              
-              <div className="mt-6 border-t pt-4">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider block mb-2">Featured services</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {it.tags.map((t) => (
-                    <span key={t} className="rounded-full bg-secondary/80 px-2.5 py-0.5 text-[10px] font-semibold text-secondary-foreground">
-                      {t}
-                    </span>
-                  ))}
+                
+                <div className="mt-6 border-t pt-4">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider block mb-2">Featured services</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {it.tags && it.tags.map((t: string) => (
+                      <span key={t} className="rounded-full bg-secondary/80 px-2.5 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -411,9 +437,19 @@ function BeforeAfter() {
   useEffect(() => {
     getGallery().then((galleryItems) => {
       // Find all gallery items that have beforeSrc and afterSrc defined
-      const bAndA = galleryItems.filter((g: any) => g.beforeSrc && g.afterSrc);
+      let bAndA = galleryItems.filter((g: any) => g.beforeSrc && g.afterSrc);
       if (bAndA.length > 0) {
-        setSets(bAndA.map((g: any) => ({
+        // Sort by creation date descending (newest first)
+        bAndA.sort((a: any, b: any) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return timeB - timeA;
+        });
+
+        // Limit to top 3 latest results
+        const top3 = bAndA.slice(0, 3);
+
+        setSets(top3.map((g: any) => ({
           label: g.caption || "Clinical Transform",
           before: g.beforeSrc,
           after: g.afterSrc
@@ -522,28 +558,44 @@ function ServicesOverview() {
 }
 
 function WhyChooseUs() {
-  const items = [
-    { 
-      t: "Expert-Led Care Only", 
-      d: "Unlike general aesthetic clinics, every consultation, diagnosis, and clinical procedure is directly handled by Dr. Amit Jain himself.",
-      icon: Award
-    },
-    { 
-      t: "FDA-Cleared Technology", 
-      d: "Equipped with gold-standard, FDA-cleared aesthetic lasers and double-spin clinical PRP centrifuges for maximum efficacy.",
-      icon: ShieldCheck
-    },
-    { 
-      t: "Indian Skin Specialization", 
-      d: "Calibrated protocols specially designed for Type IV-VI Indian skin, focusing strictly on melanocyte safety to prevent post-treatment pigmentation.",
-      icon: Heart
-    },
-    { 
-      t: "Transparent & Ethical Pricing", 
-      d: "Upfront pricing schedules with absolutely zero forced cosmetic packages, hidden add-ons, or sales targets.",
-      icon: CheckCircle2
-    },
-  ];
+  const [data, setData] = useState<any>({
+    eyebrow: "Clinical Integrity",
+    titleMain: "Why Choose",
+    titleCursive: "Dr. Amit Jain",
+    leftCardBadge: "MD - Dermatology (Skin)",
+    leftCardTitleMain: "Dermatology built on clinical",
+    leftCardTitleCursive: "Integrity",
+    leftCardDesc: "Dr. Amit Jain believes that skincare is a medical science, not a commercial transaction. We completely reject the aggressive sales targets common in aesthetic clinics, prioritizing your skin's health above all else.",
+    leftCardBullets: [
+      "10+ Years Active Clinical Experience",
+      "15,000+ Successfully Treated Patients",
+      "100% Evidence-Based Medical Protocols"
+    ],
+    items: [
+      { t: "Expert-Led Care Only", d: "Unlike general aesthetic clinics, every consultation, diagnosis, and clinical procedure is directly handled by Dr. Amit Jain himself.", icon: "Award" },
+      { t: "FDA-Cleared Technology", d: "Equipped with gold-standard, FDA-cleared aesthetic lasers and double-spin clinical PRP centrifuges for maximum efficacy.", icon: "ShieldCheck" },
+      { t: "Indian Skin Specialization", d: "Calibrated protocols specially designed for Type IV-VI Indian skin, focusing strictly on melanocyte safety to prevent post-treatment pigmentation.", icon: "Heart" },
+      { t: "Transparent & Ethical Pricing", d: "Upfront pricing schedules with absolutely zero forced cosmetic packages, hidden add-ons, or sales targets.", icon: "CheckCircle2" }
+    ]
+  });
+
+  useEffect(() => {
+    getWhyChooseUsData().then(setData);
+  }, []);
+
+  const iconMap: Record<string, any> = {
+    Sparkles: Sparkles,
+    Award: Award,
+    Star: Star,
+    ShieldCheck: ShieldCheck,
+    Heart: Heart,
+    CheckCircle2: CheckCircle2,
+    CalendarCheck: CalendarCheck,
+    MessageCircle: MessageCircle,
+    Check: Check,
+    HelpCircle: HelpCircle,
+    User: User,
+  };
 
   return (
     <section className="relative isolate overflow-hidden py-16 md:py-20">
@@ -551,8 +603,8 @@ function WhyChooseUs() {
       
       <div className="mx-auto max-w-7xl px-4">
         <SectionHeading 
-          eyebrow="Clinical Integrity" 
-          title={<>Why Choose <span className="text-cursive font-normal text-4xl md:text-[2.75rem]">Dr. Amit Jain</span></>} 
+          eyebrow={data.eyebrow} 
+          title={<>{data.titleMain} <span className="text-cursive font-normal text-4xl md:text-[2.75rem]">{data.titleCursive}</span></>} 
         />
         
         <div className="mt-12 grid gap-10 lg:grid-cols-12 items-center">
@@ -562,58 +614,51 @@ function WhyChooseUs() {
               <div className="absolute -right-8 -top-8 -z-10 h-32 w-32 rounded-full bg-secondary/30 blur-2xl" />
               
               <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-secondary px-3.5 py-1.5 text-xs font-bold text-primary shadow-3xs">
-                <Award className="h-3.5 w-3.5" /> MD - Dermatology (Skin)
+                <Award className="h-3.5 w-3.5" /> {data.leftCardBadge}
               </span>
               
               <h3 className="mt-6 text-2xl md:text-3xl font-extrabold tracking-tight text-foreground leading-[1.15]">
-                Dermatology built on clinical <span className="text-cursive font-normal text-3xl md:text-[2.25rem]">Integrity</span>
+                {data.leftCardTitleMain} <span className="text-cursive font-normal text-3xl md:text-[2.25rem]">{data.leftCardTitleCursive}</span>
               </h3>
               
               <p className="mt-4 text-xs md:text-sm text-muted-foreground leading-relaxed">
-                Dr. Amit Jain believes that skincare is a medical science, not a commercial transaction. We completely reject the aggressive sales targets common in aesthetic clinics, prioritizing your skin's health above all else.
+                {data.leftCardDesc}
               </p>
               
               <div className="mt-8 space-y-4 border-t border-border/40 pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs">
-                    ✓
+                {data.leftCardBullets && data.leftCardBullets.map((bullet: string, idx: number) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs">
+                      ✓
+                    </div>
+                    <span className="text-xs md:text-sm font-bold text-foreground">{bullet}</span>
                   </div>
-                  <span className="text-xs md:text-sm font-bold text-foreground">10+ Years Active Clinical Experience</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs">
-                    ✓
-                  </div>
-                  <span className="text-xs md:text-sm font-bold text-foreground">15,000+ Successfully Treated Patients</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs">
-                    ✓
-                  </div>
-                  <span className="text-xs md:text-sm font-bold text-foreground">100% Evidence-Based Medical Protocols</span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
           
           {/* Asymmetrical Right Features Grid */}
           <div className="lg:col-span-7 grid gap-6 sm:grid-cols-2 animate-fade-up">
-            {items.map((it) => (
-              <div 
-                key={it.t} 
-                className="group relative overflow-hidden rounded-3xl border border-primary/10 bg-white/70 p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-primary/20 hover:bg-white hover:shadow-xl"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary text-primary transition-all duration-500 group-hover:scale-105 group-hover:bg-primary group-hover:text-white shadow-3xs ring-4 ring-secondary/30">
-                  <it.icon className="h-5 w-5" />
+            {data.items.map((it: any) => {
+              const IconComponent = iconMap[it.icon] || ShieldCheck;
+              return (
+                <div 
+                  key={it.t} 
+                  className="group relative overflow-hidden rounded-3xl border border-primary/10 bg-white/70 p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-primary/20 hover:bg-white hover:shadow-xl"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary text-primary transition-all duration-500 group-hover:scale-105 group-hover:bg-primary group-hover:text-white shadow-3xs ring-4 ring-secondary/30">
+                    <IconComponent className="h-5 w-5" />
+                  </div>
+                  <h4 className="mt-4 font-extrabold text-foreground text-base tracking-tight transition-colors duration-300 group-hover:text-primary">
+                    {it.t}
+                  </h4>
+                  <p className="mt-2 text-xs md:text-sm text-muted-foreground leading-relaxed">
+                    {it.d}
+                  </p>
                 </div>
-                <h4 className="mt-4 font-extrabold text-foreground text-base tracking-tight transition-colors duration-300 group-hover:text-primary">
-                  {it.t}
-                </h4>
-                <p className="mt-2 text-xs md:text-sm text-muted-foreground leading-relaxed">
-                  {it.d}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -955,8 +1000,10 @@ function CallbackPopup() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [clinic, setClinic] = useState(fallbackClinic);
 
   useEffect(() => {
+    getClinicSettings().then(setClinic);
     // Initial popup after 5 seconds
     const initialTimer = setTimeout(() => {
       // Check if they already submitted it in this session to prevent spamming
@@ -1026,6 +1073,8 @@ function CallbackPopup() {
 
   if (!show) return null;
 
+  const dynamicWhatsappLink = `https://wa.me/${clinic.phoneRaw || "919244323441"}?text=${encodeURIComponent("Hello Dr. Amit Jain's Clinic, I'd like to book an appointment and consult with you.")}`;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md overflow-y-auto animate-fade-in">
       {/* Click outside to close (acting as the lock screen backdrop) */}
@@ -1046,7 +1095,7 @@ function CallbackPopup() {
             </div>
             <h4 className="text-xl font-extrabold text-foreground">Callback Scheduled!</h4>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-xs mx-auto font-bold">
-              Thank you! Our front desk helpdesk team will dial your number (**+91 {phone}**) within 15 minutes to assist you.
+              Thank you! Our front desk helpdesk team will dial your number (**+91 {phone}**) within 24 hours to assist you.
             </p>
           </div>
         ) : (
@@ -1055,9 +1104,9 @@ function CallbackPopup() {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-primary border border-primary/10 shadow-sm">
                 <PhoneCall className="h-6 w-6 text-primary animate-pulse" />
               </div>
-              <h3 className="text-xl font-extrabold text-foreground tracking-tight">Get a Call-Back in 15 Mins</h3>
+              <h3 className="text-xl font-extrabold text-foreground tracking-tight">Get Call Back in 24 Hours</h3>
               <p className="text-xs text-muted-foreground font-semibold max-w-xs mx-auto leading-relaxed">
-                Connect directly with Dr. Amit Jain's clinical helpdesk for instant guidance.
+                Connect directly with Dr. Amit Jain's clinical helpdesk for guidance.
               </p>
             </div>
 
@@ -1065,16 +1114,21 @@ function CallbackPopup() {
             <div className="grid grid-cols-3 gap-2 py-3 border-y border-dashed border-gray-200/80 my-4 text-[10px] text-center font-extrabold text-foreground bg-secondary/10 rounded-xl px-2">
               <div className="flex flex-col items-center gap-1.5 border-r border-gray-200 last:border-0">
                 <span className="text-base select-none">🛡️</span>
-                <span className="leading-tight text-[9px] uppercase tracking-wide text-muted-foreground">Verified Specialists</span>
+                <span className="leading-tight text-[9px] uppercase tracking-wide text-muted-foreground">Verified Specialist</span>
               </div>
               <div className="flex flex-col items-center gap-1.5 border-r border-gray-200 last:border-0">
                 <span className="text-base select-none">⭐</span>
                 <span className="leading-tight text-[9px] uppercase tracking-wide text-muted-foreground">4.8★ Google Rated</span>
               </div>
-              <div className="flex flex-col items-center gap-1.5 last:border-0">
-                <span className="text-base select-none">🔒</span>
-                <span className="leading-tight text-[9px] uppercase tracking-wide text-muted-foreground">Secure Privacy</span>
-              </div>
+              <a 
+                href={dynamicWhatsappLink}
+                target="_blank"
+                rel="noreferrer"
+                className="flex flex-col items-center gap-1 hover:scale-105 active:scale-95 transition-all text-emerald-600 hover:text-emerald-700 last:border-0"
+              >
+                <MessageCircle className="h-5 w-5 text-emerald-500 fill-emerald-500/10" />
+                <span className="leading-tight text-[9px] uppercase tracking-wide text-muted-foreground">Msg on WhatsApp</span>
+              </a>
             </div>
 
             <div className="space-y-3">
@@ -1122,7 +1176,7 @@ function CallbackPopup() {
               ) : (
                 <>
                   <PhoneCall className="h-4 w-4" />
-                  Call Me Back Immediately
+                  Call Me Back
                 </>
               )}
             </button>
