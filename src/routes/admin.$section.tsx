@@ -27,29 +27,101 @@ import {
 function ImageSelector({
   label,
   value,
-  onChange
+  onChange,
+  accept = "image/*"
 }: {
   label: string;
   value: string;
   onChange: (url: string) => void;
+  accept?: string;
 }) {
   const [gallery, setGallery] = useState<any[]>([]);
   const [showGallery, setShowGallery] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
+    if (!showGallery) return;
+
     async function loadGallery() {
       try {
-        const snap = await getDocs(collection(db, "gallery"));
-        const list: any[] = [];
-        snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
-        setGallery(list.length > 0 ? list : fallbackGallery);
+        const urlsSet = new Set<string>();
+
+        // 1. Fetch from gallery collection
+        const gallerySnap = await getDocs(collection(db, "gallery"));
+        gallerySnap.forEach((d) => {
+          const data = d.data();
+          if (data.src) urlsSet.add(data.src);
+          if (data.beforeSrc) urlsSet.add(data.beforeSrc);
+          if (data.afterSrc) urlsSet.add(data.afterSrc);
+        });
+
+        // 2. Fetch from services collection
+        const servicesSnap = await getDocs(collection(db, "services"));
+        servicesSnap.forEach((d) => {
+          const data = d.data();
+          if (data.imageUrl) urlsSet.add(data.imageUrl);
+        });
+
+        // 3. Fetch from blogs collection
+        const blogsSnap = await getDocs(collection(db, "blogs"));
+        blogsSnap.forEach((d) => {
+          const data = d.data();
+          if (data.cover) urlsSet.add(data.cover);
+        });
+
+        // 4. Fetch from hero/content
+        try {
+          const heroSnap = await getDoc(doc(db, "hero", "content"));
+          if (heroSnap.exists()) {
+            const data = heroSnap.data();
+            if (data.imageUrl) urlsSet.add(data.imageUrl);
+          }
+        } catch (e) {
+          console.warn("Failed to load hero images:", e);
+        }
+
+        // 5. Fetch from doctor/info
+        try {
+          const doctorSnap = await getDoc(doc(db, "doctor", "info"));
+          if (doctorSnap.exists()) {
+            const data = doctorSnap.data();
+            if (data.imageUrl) urlsSet.add(data.imageUrl);
+          }
+        } catch (e) {
+          console.warn("Failed to load doctor images:", e);
+        }
+
+        // 6. Fetch from custom uploads history
+        try {
+          const uploadsSnap = await getDocs(collection(db, "cloudinary_images"));
+          uploadsSnap.forEach((d) => {
+            const data = d.data();
+            if (data.src) urlsSet.add(data.src);
+          });
+        } catch (e) {
+          console.warn("Failed to load custom uploads:", e);
+        }
+
+        // Add default/fallback gallery items
+        fallbackGallery.forEach((item: any) => {
+          if (item.src) urlsSet.add(item.src);
+          if (item.beforeSrc) urlsSet.add(item.beforeSrc);
+          if (item.afterSrc) urlsSet.add(item.afterSrc);
+        });
+
+        // Convert the set to a list of gallery items
+        const list = Array.from(urlsSet).map((url) => ({
+          src: url,
+          caption: url.includes("cloudinary") ? "Cloudinary Upload" : "Website Asset"
+        }));
+
+        setGallery(list);
       } catch (e) {
         setGallery(fallbackGallery);
       }
     }
     loadGallery();
-  }, []);
+  }, [showGallery]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +140,8 @@ function ImageSelector({
       formData.append("file", file);
       formData.append("upload_preset", uploadPreset);
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const resourceType = file.type.startsWith("video/") ? "video" : "image";
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
         method: "POST",
         body: formData
       });
@@ -76,7 +149,17 @@ function ImageSelector({
       const result = await res.json();
       if (result.secure_url) {
         onChange(result.secure_url);
-        toast.success("Image uploaded to Cloudinary successfully!");
+        toast.success("File uploaded to Cloudinary successfully!");
+
+        // Log upload to Firestore history so it is always selectable
+        try {
+          await addDoc(collection(db, "cloudinary_images"), {
+            src: result.secure_url,
+            uploadedAt: new Date().toISOString()
+          });
+        } catch (dbErr) {
+          console.warn("Failed to log Cloudinary upload to Firestore:", dbErr);
+        }
       } else {
         throw new Error(result.error?.message || "Upload did not return secure URL.");
       }
@@ -86,7 +169,7 @@ function ImageSelector({
       reader.onloadend = () => {
         if (typeof reader.result === "string") {
           onChange(reader.result);
-          toast.success("Image selected from computer!");
+          toast.success("File selected from computer!");
         }
       };
       reader.readAsDataURL(file);
@@ -102,7 +185,11 @@ function ImageSelector({
       {/* Current Preview */}
       {value && (
         <div className="relative aspect-video max-w-xs rounded-xl overflow-hidden border bg-muted group shadow-sm">
-          <img src={value} alt="Selected" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+          {value.endsWith(".mp4") || value.includes("/video/") || value.startsWith("data:video/") ? (
+            <video src={value} className="h-full w-full object-contain bg-black" muted loop autoPlay playsInline />
+          ) : (
+            <img src={value} alt="Selected" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+          )}
           <button
             type="button"
             onClick={() => onChange("")}
@@ -124,7 +211,7 @@ function ImageSelector({
           <span>{uploading ? "Uploading..." : "Upload from Computer"}</span>
           <input
             type="file"
-            accept="image/*"
+            accept={accept}
             className="hidden"
             onChange={handleFileUpload}
             disabled={uploading}
@@ -201,6 +288,7 @@ function AdminSection() {
   const [doctorSettings, setDoctorSettings] = useState<any>(null);
   const [specialtiesSettings, setSpecialtiesSettings] = useState<any>(null);
   const [whyChooseUsSettings, setWhyChooseUsSettings] = useState<any>(null);
+  const [videoSettings, setVideoSettings] = useState<any>({ videoUrl: "", title: "", thumbnailUrl: "", isActive: false });
 
   // 2. Generic Add Item States
   const [newService, setNewService] = useState({
@@ -242,7 +330,7 @@ function AdminSection() {
   const [seoSettings, setSeoSettings] = useState<any>({ title: "", description: "", canonicalUrl: "" });
 
   // 3.5 Redesigned Active Tabs
-  const [homepageTab, setHomepageTab] = useState<"contact" | "hero" | "doctor" | "specialties" | "whychoose">("contact");
+  const [homepageTab, setHomepageTab] = useState<"contact" | "hero" | "doctor" | "specialties" | "whychoose" | "resultsVideo">("contact");
   const [servicesTab, setServicesTab] = useState<"add" | "manage">("manage");
   const [blogsTab, setBlogsTab] = useState<"add" | "manage">("manage");
   const [testimonialsTab, setTestimonialsTab] = useState<"add" | "manage">("manage");
@@ -357,6 +445,18 @@ function AdminSection() {
               ]
             });
           }
+
+          const vidSnap = await getDoc(doc(db, "homepage", "beforeAfterVideo"));
+          if (vidSnap.exists()) {
+            setVideoSettings(vidSnap.data());
+          } else {
+            setVideoSettings({
+              videoUrl: "",
+              title: "Clinical Treatment Walkthrough",
+              thumbnailUrl: "",
+              isActive: false
+            });
+          }
         } else if (section === "services") {
           const snap = await getDocs(collection(db, "services"));
           const list: any[] = [];
@@ -433,6 +533,9 @@ function AdminSection() {
             : []
         };
         await setDoc(doc(db, "homepage", "whyChooseUs"), cleanedWhyChooseUs);
+      }
+      if (videoSettings) {
+        await setDoc(doc(db, "homepage", "beforeAfterVideo"), videoSettings);
       }
       toast.success("Homepage & Clinic configuration saved!");
     } catch (err: any) {
@@ -737,7 +840,8 @@ function AdminSection() {
                 { id: "hero", label: "🖼️ Hero Banner" },
                 { id: "doctor", label: "👨‍⚕️ Doctor Biography" },
                 { id: "specialties", label: "✨ Specialties Copy" },
-                { id: "whychoose", label: "🤝 Why Choose Us" }
+                { id: "whychoose", label: "🤝 Why Choose Us" },
+                { id: "resultsVideo", label: "🎥 Patient Results Video" }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1264,6 +1368,61 @@ function AdminSection() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {homepageTab === "resultsVideo" && videoSettings && (
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6 animate-fade-down">
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs leading-normal">
+                  <strong className="font-bold text-primary block mb-0.5">Patient Results Video Settings</strong>
+                  Configure a showcase video displaying clinic treatments or before-and-after results. If enabled, this video will appear side-by-side with your before-and-after photo comparison cards on the homepage.
+                </div>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-4">
+                  <div>
+                    <label className="flex items-center gap-2 text-xs font-bold text-foreground select-none cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={videoSettings.isActive || false}
+                        onChange={(e) => setVideoSettings({ ...videoSettings, isActive: e.target.checked })}
+                        className="rounded border-primary/30 text-primary focus:ring-primary h-4.5 w-4.5 cursor-pointer"
+                      />
+                      <span>Show video on homepage results section</span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Video Title / Caption</label>
+                    <input
+                      type="text"
+                      value={videoSettings.title || ""}
+                      onChange={(e) => setVideoSettings({ ...videoSettings, title: e.target.value })}
+                      placeholder="e.g. PRP Hair density treatment walkthrough"
+                      className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <ImageSelector
+                    label="Before/After Video (.mp4 file)"
+                    value={videoSettings.videoUrl || ""}
+                    onChange={(url) => setVideoSettings({ ...videoSettings, videoUrl: url })}
+                    accept="video/*"
+                  />
+
+                  <ImageSelector
+                    label="Video Thumbnail Image (Optional Poster)"
+                    value={videoSettings.thumbnailUrl || ""}
+                    onChange={(url) => setVideoSettings({ ...videoSettings, thumbnailUrl: url })}
+                    accept="image/*"
+                  />
                 </div>
               </div>
             </div>

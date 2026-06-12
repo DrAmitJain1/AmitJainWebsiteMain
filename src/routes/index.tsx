@@ -29,7 +29,8 @@ import {
   getGallery,
   createAppointment,
   getSpecialtiesData,
-  getWhyChooseUsData
+  getWhyChooseUsData,
+  getBeforeAfterVideo
 } from "@/lib/firebaseServices";
 import { toast } from "sonner";
 
@@ -433,6 +434,7 @@ function Highlights() {
 
 function BeforeAfter() {
   const [sets, setSets] = useState<any[]>([]);
+  const [video, setVideo] = useState<any>({ videoUrl: "", title: "", thumbnailUrl: "", isActive: false });
 
   useEffect(() => {
     getGallery().then((galleryItems) => {
@@ -446,10 +448,7 @@ function BeforeAfter() {
           return timeB - timeA;
         });
 
-        // Limit to top 3 latest results
-        const top3 = bAndA.slice(0, 3);
-
-        setSets(top3.map((g: any) => ({
+        setSets(bAndA.map((g: any) => ({
           label: g.caption || "Clinical Transform",
           before: g.beforeSrc,
           after: g.afterSrc
@@ -463,9 +462,16 @@ function BeforeAfter() {
         ]);
       }
     });
+
+    getBeforeAfterVideo().then((v) => {
+      if (v) setVideo(v);
+    });
   }, []);
 
   if (sets.length === 0) return null;
+
+  const showVideo = video.isActive && video.videoUrl;
+  const displaySets = showVideo ? sets.slice(0, 2) : sets.slice(0, 3);
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-14 md:py-16">
@@ -475,7 +481,43 @@ function BeforeAfter() {
         description="A real-world showcase of dermatological success. Specific clinical outcomes differ; consultation is recommended." 
       />
       <div className="grid gap-6 md:grid-cols-3">
-        {sets.map((s, idx) => (
+        {showVideo && (
+          <div className="group overflow-hidden rounded-3xl border bg-white/70 shadow-sm border-glow-hover transition-all duration-300 hover:shadow-lg p-2.5 flex flex-col h-full justify-between">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black border shadow-inner flex items-center justify-center">
+              {video.videoUrl.endsWith(".mp4") || video.videoUrl.includes("/video/") || video.videoUrl.startsWith("data:video/") ? (
+                <video
+                  src={video.videoUrl}
+                  poster={video.thumbnailUrl}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="h-full w-full object-contain bg-black"
+                />
+              ) : (
+                <iframe
+                  src={
+                    video.videoUrl.includes("youtube.com/watch?v=")
+                      ? video.videoUrl.replace("watch?v=", "embed/")
+                      : video.videoUrl.includes("youtu.be/")
+                      ? video.videoUrl.replace("youtu.be/", "youtube.com/embed/")
+                      : video.videoUrl
+                  }
+                  title={video.title}
+                  allowFullScreen
+                  className="h-full w-full border-0 absolute inset-0"
+                />
+              )}
+            </div>
+            <div className="bg-white/95 px-4 py-3.5 text-center border-t mt-2 flex flex-col items-center justify-center grow">
+              <span className="text-[9px] font-extrabold text-primary uppercase tracking-wider bg-primary/5 px-2 py-0.5 rounded-md mb-1.5 block w-fit">
+                🎥 Live Procedure Walkthrough
+              </span>
+              <div className="text-xs font-bold text-foreground leading-snug">{video.title || "Clinical Transformation Walkthrough"}</div>
+            </div>
+          </div>
+        )}
+
+        {displaySets.map((s, idx) => (
           <div key={s.label + idx} className="group overflow-hidden rounded-2xl border bg-white/70 shadow-sm border-glow-hover transition-all duration-300 hover:shadow-lg">
             <div className="grid grid-cols-2 relative">
               <div className="relative aspect-[4/5] overflow-hidden">

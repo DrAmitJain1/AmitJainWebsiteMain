@@ -297,3 +297,20 @@ export async function getWhyChooseUsData() {
   }, defaultWhyChooseUs);
 }
 
+// 12. Get Before/After Video Data
+export async function getBeforeAfterVideo() {
+  const defaultVideo = {
+    videoUrl: "",
+    title: "Clinical Treatment Walkthrough",
+    thumbnailUrl: "",
+    isActive: false,
+  };
+  return safeQuery(async () => {
+    const docSnap = await getDoc(doc(db, "homepage", "beforeAfterVideo"));
+    if (docSnap.exists()) {
+      return docSnap.data() as typeof defaultVideo;
+    }
+    return defaultVideo;
+  }, defaultVideo);
+}
+

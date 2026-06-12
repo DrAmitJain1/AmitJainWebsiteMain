@@ -1046,8 +1046,8 @@ export const testimonials: Testimonial[] = [
 export const galleryImages = [
   // Doctor Images
   { src: "https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png", category: "Doctor", caption: "Dr. Amit Jain — Consultation" },
-  { src: "https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png", category: "Doctor", caption: "Dr. Amit Jain — In Clinic" },
-  { src: "https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png", category: "Doctor", caption: "Dr. Amit Jain — Dermatology Expert" },
+  // { src: "https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png", category: "Doctor", caption: "Dr. Amit Jain — In Clinic" },
+  // { src: "https://res.cloudinary.com/dntsjzbei/image/upload/v1780681530/yotg2haunjnbiblavmpb.png", category: "Doctor", caption: "Dr. Amit Jain — Dermatology Expert" },
   // Clinic Images
   { src: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1000&q=70", category: "Clinic", caption: "Reception Area" },
   { src: "https://images.unsplash.com/photo-1631815587646-b85a1bb027e1?w=1000&q=70", category: "Clinic", caption: "Consultation Room" },
