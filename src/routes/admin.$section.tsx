@@ -1961,6 +1961,7 @@ function AdminSection() {
                         <option value="Doctor">Doctor Images</option>
                         <option value="Clinic">Clinic Images</option>
                         <option value="Treatment">Treatment Room</option>
+                        <option value="Before & After">Before & After</option>
                       </select>
                     </div>
                   </>
