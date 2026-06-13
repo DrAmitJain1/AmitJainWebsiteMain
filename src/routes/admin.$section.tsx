@@ -258,6 +258,53 @@ function ImageSelector({
   );
 }
 
+// ----------------------------------------------------
+// COMMA SEPARATED INPUT COMPONENT
+// ----------------------------------------------------
+function CommaSeparatedInput({
+  value,
+  onChange,
+  className,
+  placeholder
+}: {
+  value: string[];
+  onChange: (newValue: string[]) => void;
+  className?: string;
+  placeholder?: string;
+}) {
+  const [localVal, setLocalVal] = useState(() => value ? value.join(", ") : "");
+
+  useEffect(() => {
+    const parentStr = value ? value.join(", ") : "";
+    const currentArray = localVal.split(",").map(x => x.trim()).filter(Boolean);
+    const parentArray = value || [];
+
+    const isArraysEqual = currentArray.length === parentArray.length &&
+      currentArray.every((v, i) => v === parentArray[i]);
+
+    if (!isArraysEqual) {
+      setLocalVal(parentStr);
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalVal(newValue);
+    const parsedArray = newValue.split(",").map(x => x.trim()).filter(Boolean);
+    onChange(parsedArray);
+  };
+
+  return (
+    <input
+      type="text"
+      value={localVal}
+      onChange={handleChange}
+      className={className}
+      placeholder={placeholder}
+    />
+  );
+}
+
 export const Route = createFileRoute("/admin/$section")({
   component: AdminSection,
 });
@@ -1272,11 +1319,15 @@ function AdminSection() {
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Featured Tags (comma separated)</label>
-                        <input type="text" value={item.tags ? item.tags.join(", ") : ""} onChange={(e) => {
-                          const newItems = [...specialtiesSettings.items];
-                          newItems[idx] = { ...item, tags: e.target.value.split(",").map(x => x.trim()).filter(Boolean) };
-                          setSpecialtiesSettings({ ...specialtiesSettings, items: newItems });
-                        }} className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none" />
+                        <CommaSeparatedInput
+                          value={item.tags || []}
+                          onChange={(newTags) => {
+                            const newItems = [...specialtiesSettings.items];
+                            newItems[idx] = { ...item, tags: newTags };
+                            setSpecialtiesSettings({ ...specialtiesSettings, items: newItems });
+                          }}
+                          className="w-full rounded-xl border px-2.5 py-1.5 text-xs bg-white outline-none"
+                        />
                       </div>
                     </div>
                   ))}
@@ -2476,15 +2527,15 @@ function AdminSection() {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Symptoms (comma separated)</label>
-                  <input type="text" value={editingItem.symptoms?.join(", ") || ""} onChange={(e) => setEditingItem({ ...editingItem, symptoms: e.target.value.split(",").map(x => x.trim()).filter(Boolean) })} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  <CommaSeparatedInput value={editingItem.symptoms || []} onChange={(newVal) => setEditingItem({ ...editingItem, symptoms: newVal })} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Primary Causes (comma separated)</label>
-                  <input type="text" value={editingItem.causes?.join(", ") || ""} onChange={(e) => setEditingItem({ ...editingItem, causes: e.target.value.split(",").map(x => x.trim()).filter(Boolean) })} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  <CommaSeparatedInput value={editingItem.causes || []} onChange={(newVal) => setEditingItem({ ...editingItem, causes: newVal })} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-muted-foreground uppercase block mb-1">Clinical Benefits (comma separated)</label>
-                  <input type="text" value={editingItem.benefits?.join(", ") || ""} onChange={(e) => setEditingItem({ ...editingItem, benefits: e.target.value.split(",").map(x => x.trim()).filter(Boolean) })} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                  <CommaSeparatedInput value={editingItem.benefits || []} onChange={(newVal) => setEditingItem({ ...editingItem, benefits: newVal })} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
 
                 {/* Treatment steps editing in dialog */}
